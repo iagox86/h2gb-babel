@@ -37,7 +37,7 @@ def binary_upload(filename)
   return do_post("/binary/upload", {
                   :name => name,
                   :comment => comment,
-                  :data => IO.read(filename).force_encoding('ISO-8859-1'),
+                  :data => Base64.encode64(IO.read(filename)),
                 })
 end
 
@@ -60,7 +60,9 @@ def binary_delete_all()
 end
 
 def binary_download(binary_id)
-  return do_get("/binary/%d/download" % binary_id)
+  result = do_get("/binary/%d/download" % binary_id)
+  result[:data] = Base64.decode64(result[:data])
+  return result
 end
 
 puts("Uploading a test binary")
@@ -72,7 +74,11 @@ puts("Listing binaries (we should see the one):")
 puts(binary_list())
 
 puts("Downloading it:")
-puts(binary_download(binary_id))
+download = binary_download(binary_id)
+puts(download)
+f = File.new("test.out", "wb")
+f.write(download[:data])
+f.close()
 
 puts("Deleting it")
 binary_delete(binary_id)
