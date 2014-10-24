@@ -149,7 +149,9 @@ end
 puts("Uploading a test binary")
 binary = binary_upload("./sample.raw")
 binary_id = binary[:binary_id]
-puts("WORKSPACE ID: %d" % binary_id)
+puts("BINARY ID: %d" % binary_id)
+
+exit
 
 puts("Listing binaries (we should see the one):")
 pp(binary_list())
