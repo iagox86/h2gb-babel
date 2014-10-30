@@ -86,18 +86,18 @@ class Workspace < ActiveRestClient::Base
   end
 end
 
-class Memory < ActiveRestClient::Base
+class View < ActiveRestClient::Base
   base_url HOST
   request_body_type :json
 
-  get    :all,            "/workspaces/:workspace_id/memories"
-  get    :find,           "/memory/:memory_id"
-  put    :save,           "/memory/:memory_id"
-  post   :create,         "/workspaces/:workspace_id/new_memory"
-  delete :delete,         "/binaries/:memory_id"
+  get    :all,            "/workspaces/:workspace_id/views"
+  get    :find,           "/view/:view_id"
+  put    :save,           "/view/:view_id"
+  post   :create,         "/workspaces/:workspace_id/new_view"
+  delete :delete,         "/binaries/:view_id"
 
   def new_segment(name, address, file_address, data)
-    return post_stuff("/memory/:memory_id/new_segment", {
+    return post_stuff("/view/:view_id/new_segment", {
       :name         => name,
       :address      => address,
       :file_address => file_address,
@@ -106,13 +106,13 @@ class Memory < ActiveRestClient::Base
   end
 
   def delete_segment(name)
-    return post_stuff("/memory/:memory_id/delete_segment", {
+    return post_stuff("/view/:view_id/delete_segment", {
       :segment => name,
     })
   end
 
   def new_node(address, type, length, value, details, references)
-    return post_stuff("/memory/:memory_id/create_node", {
+    return post_stuff("/view/:view_id/create_node", {
       :address      => address,
       :type         => type,
       :length       => length,
@@ -123,7 +123,7 @@ class Memory < ActiveRestClient::Base
   end
 
   def delete_node()
-    return post_stuff("/memory/:memory_id/delete_segment", {
+    return post_stuff("/view/:view_id/delete_segment", {
       :segment => name,
     })
   end
@@ -203,37 +203,38 @@ puts(workspace.inspect)
 # TODO: Test the get / set
 
 puts()
-puts("** CREATE MEMORY")
-memory = Memory.create(:workspace_id => workspace.id)
-puts(memory.inspect)
+puts("** CREATE view")
+view = View.create(:workspace_id => workspace.id)
+puts(view.inspect)
 
 puts()
-puts("** LIST MEMORIES")
-memories = Memory.all(:workspace_id => workspace.id)
-puts(memories.inspect)
-if(memories[:memories].count != 1)
-  puts("Exactly 1 result wasn't returned as expected! Instead, #{memories[:memories].count} were returned")
+puts("** LIST VIEWS")
+views = View.all(:workspace_id => workspace.id)
+puts(views.inspect)
+if(views[:views].count != 1)
+  puts("Exactly 1 result wasn't returned as expected! Instead, #{views[:views].count} were returned")
 end
-memories[:memories].each do |m|
-  if(m.id != memory.memory_id)
-    puts("The memory returned by 'all' didn't have the same id as the new memory!")
+views[:views].each do |m|
+  if(m.id != view.view_id)
+    puts("The view returned by 'all' didn't have the same id as the new view!")
     puts(m.id)
-    puts(memory.memory_id)
+    puts(view.view_id)
     exit
   end
 end
 
 
 puts()
-puts("** FIND MEMORY")
-memory = Memory.find(:memory_id => memory.memory_id)
-puts(memory.inspect)
+puts("** FIND VIEW")
+view = View.find(:view_id => view.view_id)
+puts(view.inspect)
 
 
 # TODO: Create segments / nodes
 
 #puts()
-#puts("** DELETING MEMORY")
+#puts("** DELETING VIEW")
+#puts view.delete()
 #
 #puts("** DELETE THE WORKSPACE")
 #puts(workspace.inspect)
