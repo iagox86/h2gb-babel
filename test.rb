@@ -62,7 +62,6 @@ class Binary < ActiveRestClient::Base
   end
 end
 
-
 class Workspace < ActiveRestClient::Base
   base_url HOST
   request_body_type :json
@@ -91,13 +90,13 @@ class View < ActiveRestClient::Base
   request_body_type :json
 
   get    :all,            "/workspaces/:workspace_id/views"
-  get    :find,           "/view/:view_id"
-  put    :save,           "/view/:view_id"
+  get    :find,           "/views/:view_id"
+  put    :save,           "/views/:view_id"
   post   :create,         "/workspaces/:workspace_id/new_view"
   delete :delete,         "/binaries/:view_id"
 
   def new_segment(name, address, file_address, data)
-    return post_stuff("/view/:view_id/new_segment", {
+    return post_stuff("/views/:view_id/new_segment", {
       :name         => name,
       :address      => address,
       :file_address => file_address,
@@ -106,13 +105,13 @@ class View < ActiveRestClient::Base
   end
 
   def delete_segment(name)
-    return post_stuff("/view/:view_id/delete_segment", {
+    return post_stuff("/views/:view_id/delete_segment", {
       :segment => name,
     })
   end
 
   def new_node(address, type, length, value, details, references)
-    return post_stuff("/view/:view_id/create_node", {
+    return post_stuff("/views/:view_id/create_node", {
       :address      => address,
       :type         => type,
       :length       => length,
@@ -123,7 +122,7 @@ class View < ActiveRestClient::Base
   end
 
   def delete_node()
-    return post_stuff("/view/:view_id/delete_segment", {
+    return post_stuff("/views/:view_id/delete_segment", {
       :segment => name,
     })
   end
@@ -222,7 +221,6 @@ views[:views].each do |m|
     exit
   end
 end
-
 
 puts()
 puts("** FIND VIEW")
