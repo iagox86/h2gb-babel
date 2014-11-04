@@ -6,27 +6,29 @@ require 'active_rest_client'
 #require 'cgi' # for URI::encode()
 
 module ActiveRestExtras
-  def format_url(url, params)
-    @attributes.each_pair do |k, v|
-      url = url.gsub(":#{k}", v.to_s)
-    end
-
+  # This ugly function takes a URL such as /test/:id/:id2 and replaces the :id and :id2
+  # values based first on the 'params' hash passed in, then from attributes of the class.
+  def format_url(url, params = {})
     params.each_pair do |k, v|
       if(!url.index(":#{k}").nil?)
-        url = url.gsub(":#{k}", params.delete(k))
+        url = url.gsub(/:#{k.to_s()}([^a-zA-Z0-9_.-]|$)/, params.delete(k).to_s + '\\1')
       end
+    end
+
+    @attributes.each_pair do |k, v|
+      url = url.gsub(/:#{k}([^a-zA-Z0-9_.-]|$)/, v.to_s + '\\1')
     end
 
     return url
   end
 
-  def post_stuff(url, params)
+  def post_stuff(url, params = {})
     url = format_url(url, params)
 
     return Workspace._request(HOST + url, :post, params)
   end
 
-  def get_stuff(url, params)
+  def get_stuff(url, params = {})
     url = format_url(url, params) + "?"
 
     params.each_pair do |k, v|
@@ -35,5 +37,14 @@ module ActiveRestExtras
 
     return Workspace._request(HOST + url, :get)
   end
-end
 
+  def delete_stuff(url, params = {})
+    url = format_url(url, params) + "?"
+
+    params.each_pair do |k, v|
+      url += params.to_query()
+    end
+
+    return Workspace._request(HOST + url, :delete)
+  end
+end

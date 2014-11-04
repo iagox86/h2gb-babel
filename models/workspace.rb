@@ -12,15 +12,18 @@ class Workspace < ActiveRestClient::Base
   get    :find,           "/workspaces/:workspace_id"
   put    :save,           "/workspaces/:workspace_id"
   post   :create,         "/binaries/:binary_id/new_workspace"
-  delete :delete,         "/workspaces/:workspace_id"
 
   def set(params)
-    return post_stuff("/workspace/:workspace_id/set", params)
+    return post_stuff("/workspaces/:workspace_id/set", params)
   end
 
   def get(params)
-    result = get_stuff("/workspace/:workspace_id/get", params)
+    result = get_stuff("/workspaces/:workspace_id/get", params)
 
     return result.value
+  end
+
+  def delete()
+    return delete_stuff("/workspaces/:workspace_id", {:workspace_id => self.id})
   end
 end

@@ -6,11 +6,12 @@ class View < ActiveRestClient::Base
   base_url HOST
   request_body_type :json
 
+  include ActiveRestExtras
+
   get    :all,            "/workspaces/:workspace_id/views"
   get    :find,           "/views/:view_id"
   put    :save,           "/views/:view_id"
   post   :create,         "/workspaces/:workspace_id/new_view"
-  delete :delete,         "/binaries/:view_id"
 
   def new_segment(name, address, file_address, data)
     return post_stuff("/views/:view_id/new_segment", {
@@ -42,5 +43,10 @@ class View < ActiveRestClient::Base
     return post_stuff("/views/:view_id/delete_segment", {
       :segment => name,
     })
+  end
+
+  def delete()
+    puts(inspect())
+    return delete_stuff("/views/:view_id", {:view_id => self.id})
   end
 end

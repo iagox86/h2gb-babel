@@ -2,6 +2,8 @@ $LOAD_PATH << File.dirname(__FILE__)
 
 HOST = ARGV[0] || "http://localhost:9292"
 
+require 'active_rest_client'
+
 require 'active_rest_extras'
 require 'models/binary'
 require 'models/view'
@@ -109,14 +111,13 @@ puts(view.inspect)
 
 # TODO: Create segments / nodes
 
-#puts()
-#puts("** DELETING VIEW")
-#puts view.delete()
-#
-#puts("** DELETE THE WORKSPACE")
-#puts(workspace.inspect)
-#puts workspace.delete()
-#
-#puts()
-#puts("** DELETE THE BINARY")
-#puts binary.delete().inspect
+puts()
+puts("** DELETING VIEW")
+puts view.delete().inspect()
+
+puts("** DELETE THE WORKSPACE")
+puts workspace.delete().inspect()
+
+puts()
+puts("** DELETE THE BINARY")
+puts binary.delete().inspect()

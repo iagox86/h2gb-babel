@@ -6,11 +6,15 @@ class Binary < ActiveRestClient::Base
   base_url HOST
   request_body_type :json
 
+  include ActiveRestExtras
+
   get    :all,    "/binaries"
   get    :find,   "/binaries/:binary_id"
   put    :save,   "/binaries/:binary_id"
   post   :create, "/binaries"
-  delete :delete, "/binaries/:binary_id"
+
+  # This doesn't work for some reason...
+  #delete :delete, "/binaries/:binary_id"
 
   # Transparently encode base64 in outbound requests
   before_request do |name, request|
@@ -25,6 +29,10 @@ class Binary < ActiveRestClient::Base
     b = super(id)
     b.data = Base64.decode64(b.data)
     return b
+  end
+
+  def delete()
+    return delete_stuff("/binaries/:binary_id", {:binary_id => self.id})
   end
 end
 
