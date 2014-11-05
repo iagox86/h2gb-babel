@@ -47,6 +47,6 @@ class View < ActiveRestClient::Base
 
   def delete()
     puts(inspect())
-    return delete_stuff("/views/:view_id", {:view_id => self.id})
+    return delete_stuff("/views/:view_id")
   end
 end

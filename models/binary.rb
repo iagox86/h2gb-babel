@@ -32,7 +32,7 @@ class Binary < ActiveRestClient::Base
   end
 
   def delete()
-    return delete_stuff("/binaries/:binary_id", {:binary_id => self.id})
+    return delete_stuff("/binaries/:binary_id")
   end
 end
 

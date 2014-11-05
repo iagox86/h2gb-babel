@@ -24,6 +24,6 @@ class Workspace < ActiveRestClient::Base
   end
 
   def delete()
-    return delete_stuff("/workspaces/:workspace_id", {:workspace_id => self.id})
+    return delete_stuff("/workspaces/:workspace_id")
   end
 end
