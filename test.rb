@@ -36,7 +36,7 @@ begin
   all_binaries = Binary.all()
   good = false
   all_binaries.binaries.each do |b|
-    if(b.id == binary_id)
+    if(b.binary_id == binary_id)
       good = true
       puts("  * Found our new binary!")
     end
@@ -75,7 +75,7 @@ begin
     exit
   end
   workspaces[:workspaces].each do |w|
-    if(w.id != workspace_id)
+    if(w.workspace_id != workspace_id)
       puts("The workspace returned by 'all' didn't have the same id as the new workspace!")
       exit
     end
