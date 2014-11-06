@@ -111,7 +111,7 @@ begin
     puts("Exactly 1 result wasn't returned as expected! Instead, #{views[:views].count} were returned")
   end
   views[:views].each do |m|
-    if(m.id != view.view_id)
+    if(m.view_id != view.view_id)
       puts("The view returned by 'all' didn't have the same id as the new view!")
       puts(m.id)
       puts(view.view_id)
