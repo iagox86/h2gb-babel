@@ -22,9 +22,10 @@ class View < ActiveRestClient::Base
     })
   end
 
+  # name can be a string or an array
   def delete_segment(name)
     return post_stuff("/views/:view_id/delete_segment", {
-      :segment => name,
+      :segments => name,
     })
   end
 
@@ -38,6 +39,15 @@ class View < ActiveRestClient::Base
       :references   => references,
     })
   end
+
+  def get_segments(params = {})
+    return get_stuff("/views/:view_id/segments", {
+      :names      => params[:names],
+      :skip_nodes => params[:skip_nodes],
+      :skip_data  => params[:skip_data],
+    })
+  end
+
 
   def delete_node()
     return post_stuff("/views/:view_id/delete_segment", {

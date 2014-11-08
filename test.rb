@@ -9,6 +9,8 @@ require 'models/binary'
 require 'models/view'
 require 'models/workspace'
 
+require 'pp' # TODO: Debug
+
 binary_id    = nil
 workspace_id = nil
 view_id      = nil
@@ -124,14 +126,41 @@ begin
   view = View.find(:view_id => view_id)
   puts(view.inspect)
 
+  puts()
+  puts("** CREATE SEGMENT")
+  segment = view.new_segment("s1", 0x00000000, 0x00004000, "A" * 32)
+  puts(segment.inspect)
 
-  # TODO: Create segments / nodes
+  puts()
+  puts("** FIND SEGMENT (without nodes + without data)")
+  segments = view.get_segments(:names => "s1", :skip_nodes => true, :skip_data => true)
+  puts(segments.inspect)
+
+  puts()
+  puts("** FIND SEGMENT (without nodes + with data)")
+  segments = view.get_segments(:names => "s1", :skip_nodes => true, :skip_data => false)
+  puts(segments.inspect)
+
+  puts()
+  puts("** FIND SEGMENT (with everything)")
+  segments = view.get_segments(:names => "s1")
+  puts(segments.inspect)
+
+  puts()
+  puts("** FIND ALL SEGMENTS (no nodes + data)")
+  segments = view.get_segments(:skip_nodes => true, :skip_data => true)
+  puts(segments.inspect)
+
+  puts()
+  puts("** DELETE SEGMENT")
+  puts(view.delete_segment("s1").inspect())
 
 rescue Exception => e
   puts()
   puts("EXCEPTION!!")
   puts(e)
   puts()
+  puts(e.backtrace)
 
   puts("Press 'enter' to continue")
   gets()
