@@ -2,28 +2,40 @@
 # Create on November 4, 2014
 # By Ron Bowes
 
-class Workspace < ActiveRestClient::Base
-  base_url HOST
-  request_body_type :json
+require 'models/model'
 
-  include ActiveRestExtras
+class Workspace < Model
+#  def set(params)
+#    return post_stuff("/workspaces/:workspace_id/set", params)
+#  end
+#
+#  def get(params)
+#    result = get_stuff("/workspaces/:workspace_id/get", params)
+#
+#    return result.value
+#  end
 
-  get    :all,            "/binaries/:binary_id/workspaces"
-  get    :find,           "/workspaces/:workspace_id"
-  put    :save,           "/workspaces/:workspace_id"
-  post   :create,         "/binaries/:binary_id/new_workspace"
-
-  def set(params)
-    return post_stuff("/workspaces/:workspace_id/set", params)
+  def initialize(params = {})
+    super(params)
   end
 
-  def get(params)
-    result = get_stuff("/workspaces/:workspace_id/get", params)
-
-    return result.value
+  def Workspace.find(id, params = {})
+    return get_stuff(Workspace, '/workspaces/:workspace_id', params.merge({ :workspace_id => id }))
   end
 
-  def delete()
-    return delete_stuff("/workspaces/:workspace_id")
+  def Workspace.create(params)
+    return post_stuff(Workspace, '/binaries/:binary_id/new_workspace', params)
+  end
+
+  def Workspace.all(params = {})
+    return get_stuff(Workspace, '/binaries/:binary_id/workspaces', params)
+  end
+
+  def save(params = {})
+    return put_stuff('/workspaces/:workspace_id', params.merge(self.o))
+  end
+
+  def delete(params = {})
+    return delete_stuff('/workspaces/:workspace_id', params.merge({:workspace_id => self.o[:workspace_id]}))
   end
 end

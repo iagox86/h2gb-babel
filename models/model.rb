@@ -38,14 +38,13 @@ class Model
     if(use_body)
       result = method.call(url, :body => JSON.pretty_generate(params))
     else
-      params.each_pair do |k, v|
-        url += params.to_query()
-      end
-
+      url += "?" + params.to_query()
       result = method.call(url)
     end
 
-    # TODO: Check return status
+    if(result.response.code.to_i != 200)
+      raise(Exception, "HTTP Request failed for #{url}: #{result.response.to_s}")
+    end
 
     result = JSON.parse(result.response.body, :symbolize_names => true)
 

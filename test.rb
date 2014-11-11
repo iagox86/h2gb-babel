@@ -31,6 +31,8 @@ begin
     puts("A valid binary wasn't returned!")
     puts("We got: #{binary.inspect}")
     exit
+  else
+    puts("(success)")
   end
   puts(binary.inspect)
   puts("binary_id: %d" % binary_id)
@@ -48,6 +50,8 @@ begin
   if(!good)
     puts("Couldn't find out new binary!")
     exit
+  else
+    puts("(success)")
   end
 
   puts()
@@ -58,6 +62,8 @@ begin
   if(binary.o[:name] != "Binary Test")
     puts("Binary has the wrong name!")
     exit
+  else
+    puts("(success)")
   end
 
   puts()
@@ -72,6 +78,8 @@ begin
   if(binary.o[:name] != "new binary name")
     puts("Binary update failed!")
     exit
+  else
+    puts("(success)")
   end
 
   # TODO: Inspect the body contents
@@ -80,47 +88,57 @@ begin
   puts("** CREATE A WORKSPACE")
   workspace = Workspace.create(:binary_id => binary_id, :name => "test workspace")
   puts(workspace.inspect)
-  workspace_id = workspace.workspace_id
+  workspace_id = workspace.o[:workspace_id]
 
   if(!workspace_id)
     puts("A valid workspace wasn't returned!")
     puts("We got: #{workspace.inspect}")
     exit
+  else
+    puts("(success)")
   end
   puts("workspace_id: %d" % workspace_id)
 
   puts()
   puts("** LIST ALL WORKSPACES")
   workspaces = Workspace.all(:binary_id => binary_id)
-  if(workspaces[:workspaces].count != 1)
+  if(workspaces.o[:workspaces].length != 1)
     puts("We should have exactly one workspace under our new binary, but we have #{workspaces[:workspaces].length} instead!")
     exit
+  else
+    puts("(success)")
   end
-  workspaces[:workspaces].each do |w|
-    if(w.workspace_id != workspace_id)
+  workspaces.o[:workspaces].each do |w|
+    if(w[:workspace_id] != workspace_id)
       puts("The workspace returned by 'all' didn't have the same id as the new workspace!")
       exit
+    else
+      puts("(success)")
     end
     puts(w.inspect)
   end
 
   puts()
   puts("** FIND THE WORKSPACE")
-  workspace = Workspace.find(:workspace_id => workspace_id)
+  workspace = Workspace.find(workspace_id)
   puts(workspace.inspect)
-  if(workspace.name != "test workspace")
+  if(workspace.o[:name] != "test workspace")
     puts("Workspace created has the wrong name!")
     exit
+  else
+    puts("(success)")
   end
 
   puts()
   puts("** UPDATE THE WORKSPACE")
-  workspace.name = "new workspace name"
+  workspace.o[:name] = "new workspace name"
   workspace.save()
-  workspace = Workspace.find(:workspace_id => workspace_id)
-  if(workspace.name != "new workspace name")
+  workspace = Workspace.find(workspace_id)
+  if(workspace.o[:name] != "new workspace name")
     puts("Workspace update failed!")
     exit
+  else
+    puts("(success)")
   end
   puts(workspace.inspect)
 
@@ -128,39 +146,37 @@ begin
   puts("** CREATE VIEW")
   view = View.create(:workspace_id => workspace_id, :name => "view name")
   puts(view.inspect)
-  view_id = view.view_id
+  view_id = view.o[:view_id]
 
   puts()
   puts("** LIST VIEWS")
   views = View.all(:workspace_id => workspace_id)
   puts(views.inspect)
-  if(views[:views].count != 1)
+  if(views.o[:views].length != 1)
     puts("Exactly 1 result wasn't returned as expected! Instead, #{views[:views].count} were returned")
   end
-  views[:views].each do |m|
-    if(m.view_id != view.view_id)
+  views.o[:views].each do |v|
+    if(v[:view_id] != view_id)
       puts("The view returned by 'all' didn't have the same id as the new view!")
-      puts(m.id)
-      puts(view.view_id)
       exit
     end
   end
 
   puts()
   puts("** FIND VIEW")
-  view = View.find(:view_id => view_id)
+  view = View.find(view_id)
   puts(view.inspect)
-  if(view.name != "view name")
+  if(view.o[:name] != "view name")
     puts("The view's name was wrong!")
     exit
   end
 
   puts()
   puts("** UPDATE THE VIEW")
-  view.name = "new view name"
+  view.o[:name] = "new view name"
   view.save()
-  view = View.find(:view_id => view_id)
-  if(view.name != "new view name")
+  view = View.find(view_id)
+  if(view.o[:name] != "new view name")
     puts("view update failed!")
     exit
   end
@@ -168,30 +184,30 @@ begin
 
   puts()
   puts("** CREATE SEGMENT")
-  segment = view.new_segment("s1", 0x00000000, 0x00004000, "A" * 8)
+  segment = view.new_segment("s1", 0x00000000, 0x00004000, "AAAAAAAA")
   puts(segment.inspect)
 
   puts()
   puts("** FIND SEGMENT (without nodes + without data)")
   segments = view.get_segments("s1", :with_nodes => false, :with_data => false)
   puts(segments.inspect)
+  if(segments.length() != 1)
+    puts("It didn't return exactly one segment!")
+    exit
+  end
   segments.each do |s|
-    if(s.nodes.count() > 0)
+    if(s[:nodes].length() > 0)
       pp s.nodes
       puts("The segment returned nodes that it wasn't supposed to!")
       exit
     end
 
-    if(s.data != nil)
+    if(s[:data] != nil)
       puts("Data was returned when it shouldn't be!")
       puts()
-      puts("Data: #{s.data}")
+      puts("Data: #{s[:data]}")
       exit
     end
-  end
-  if(segments.count() != 1)
-    puts("It didn't return exactly one segment!")
-    exit
   end
 
   puts()
@@ -199,20 +215,19 @@ begin
   segments = view.get_segments("s1")
   puts(segments.inspect)
   segments.each do |s|
-    if(s.nodes.count() > 0)
-      pp s.nodes
+    if(s[:nodes].length() > 0)
       puts("The segment returned nodes that it wasn't supposed to!")
       exit
     end
 
-    if(s.data != nil)
+    if(s[:data] != nil)
       puts("Data was returned when it shouldn't be!")
       puts()
-      puts("Data: #{s.data}")
+      puts("Data: #{s[:data]}")
       exit
     end
   end
-  if(segments.count() != 1)
+  if(segments.length() != 1)
     puts("It didn't return exactly one segment!")
     exit
   end
@@ -222,13 +237,12 @@ begin
   segments = view.get_segments("s1", :with_nodes => false, :with_data => true)
   puts(segments.inspect)
   segments.each do |s|
-    if(s.nodes.count() > 0)
-      pp s.nodes
+    if(s[:nodes].length() > 0)
       puts("The segment returned nodes that it wasn't supposed to!")
       exit
     end
   end
-  if(segments.count() != 1)
+  if(segments.length() != 1)
     puts("It didn't return exactly one segment!")
     exit
   end
@@ -236,31 +250,72 @@ begin
   puts()
   puts("** FIND SEGMENT (with everything)")
   segment = view.get_segment("s1", :with_nodes => true, :with_data => true)
-  if(segment.data != "A" * 8)
+  puts(segment.inspect)
+  if(segment[:data] != "AAAAAAAA")
     puts("The segment had the wrong data!")
     exit
   end
-  if(segment.nodes.count() != 8)
-    puts("It didn't return the right number of nodes! (expected 8, found #{segment.nodes.count()})")
+  if(segment[:nodes].length() != 8)
+    puts("It didn't return the right number of nodes! (expected 8, found #{segment[:nodes].length()})")
     exit
   end
-  segment.nodes.each do |n|
-    if(n.node.type != 'undefined')
+  segment[:nodes].each do |n|
+    if(n[:node][:type] != 'undefined')
       puts("At least one node is the wrong type!")
-      puts(n.type)
+      puts("Expected: 'undefined', found: '#{n[:node][:type]}'")
       exit
     end
   end
 
   puts()
-  puts("** FIND ALL SEGMENTS (no nodes + no data)")
-  segments = view.get_segments(:with_nodes => false, :with_data => false)
+  puts("** FIND ALL SEGMENTS")
+  segments = view.get_segments()
   puts(segments.inspect)
+  if(segments.length != 1)
+    puts("Wrong number of segments returned when fetching all segments!")
+    exit
+  end
 
   puts()
   puts("** DELETE SEGMENT")
   puts(view.delete_segment("s1").inspect())
 
+  puts()
+  puts("** CHECKING THE DELETE")
+  segments = view.get_segments()
+  puts(segments.inspect)
+  if(segments.length != 0)
+    puts("Segment didn't delete successfully!")
+    exit
+  end
+
+  puts()
+  puts("** TRYING TO UNDO THE DELETE")
+  puts(view.undo())
+
+  puts()
+  puts("** CHECKING THE UNDO")
+  segments = view.get_segments()
+  puts(segments.inspect)
+  if(segments.length != 1)
+    puts("The undo didn't restore the segment like it should have!")
+    exit
+  end
+
+#  puts()
+#  puts("** TRYING TO REDO THE DELETE")
+#  puts(view.redo())
+#  puts()
+#
+#  puts("** CHECKING THE REDO")
+#  segments = view.get_segments()
+#  puts(segments.inspect)
+#  if(segments.length != 0)
+#    puts("The redo didn't delete the segment like it should have!")
+#    exit
+#  end
+
+  puts("ALL DONE! EVERYTHING IS GOOD!!!")
 rescue Exception => e
   puts()
   puts("EXCEPTION!!")
@@ -279,7 +334,7 @@ ensure
   if(!view_id.nil?)
     puts()
     puts("** DELETING VIEW")
-    puts(View.find(:view_id => view_id).delete().inspect())
+    puts(View.find(view_id).delete().inspect())
   else
     puts("** NO VIEW TO DELETE")
   end
@@ -287,7 +342,7 @@ ensure
   if(!workspace_id.nil?)
     puts()
     puts("** DELETE THE WORKSPACE")
-    puts(Workspace.find(:workspace_id => workspace_id).delete().inspect())
+    puts(Workspace.find(workspace_id).delete().inspect())
   else
     puts("** NO WORKSPACE TO DELETE")
   end
