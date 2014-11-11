@@ -165,12 +165,42 @@ begin
 
   puts()
   puts("** FIND SEGMENT (without nodes + without data)")
-  segments = view.get_segments("s1", :skip_nodes => true, :skip_data => true)
+  segments = view.get_segments("s1", :with_nodes => false, :with_data => false)
   puts(segments.inspect)
   segments.each do |s|
     if(s.nodes.count() > 0)
       pp s.nodes
       puts("The segment returned nodes that it wasn't supposed to!")
+      exit
+    end
+
+    if(s.data != nil)
+      puts("Data was returned when it shouldn't be!")
+      puts()
+      puts("Data: #{s.data}")
+      exit
+    end
+  end
+  if(segments.count() != 1)
+    puts("It didn't return exactly one segment!")
+    exit
+  end
+
+  puts()
+  puts("** FIND SEGMENT (making sure defaults match)")
+  segments = view.get_segments("s1")
+  puts(segments.inspect)
+  segments.each do |s|
+    if(s.nodes.count() > 0)
+      pp s.nodes
+      puts("The segment returned nodes that it wasn't supposed to!")
+      exit
+    end
+
+    if(s.data != nil)
+      puts("Data was returned when it shouldn't be!")
+      puts()
+      puts("Data: #{s.data}")
       exit
     end
   end
@@ -181,7 +211,7 @@ begin
 
   puts()
   puts("** FIND SEGMENT (without nodes + with data)")
-  segments = view.get_segments("s1", :skip_nodes => true, :skip_data => false)
+  segments = view.get_segments("s1", :with_nodes => false, :with_data => true)
   puts(segments.inspect)
   segments.each do |s|
     if(s.nodes.count() > 0)
@@ -197,14 +227,13 @@ begin
 
   puts()
   puts("** FIND SEGMENT (with everything)")
-  segment = view.get_segment("s1")
-  pp segment
+  segment = view.get_segment("s1", :with_nodes => true, :with_data => true)
   if(segment.data != "A" * 8)
     puts("The segment had the wrong data!")
     exit
   end
   if(segment.nodes.count() != 8)
-    puts("It didn't return the right number of nodes!")
+    puts("It didn't return the right number of nodes! (expected 8, found #{segment.nodes.count()})")
     exit
   end
   segment.nodes.each do |n|
@@ -216,8 +245,8 @@ begin
   end
 
   puts()
-  puts("** FIND ALL SEGMENTS (no nodes + data)")
-  segments = view.get_segments(:skip_nodes => true, :skip_data => true)
+  puts("** FIND ALL SEGMENTS (no nodes + no data)")
+  segments = view.get_segments(:with_nodes => false, :with_data => false)
   puts(segments.inspect)
 
   puts()

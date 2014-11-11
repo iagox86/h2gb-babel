@@ -43,8 +43,8 @@ class View < ActiveRestClient::Base
   def get_segments(names, params = {})
     segments = get_stuff("/views/:view_id/segments", {
       :names      => names,
-      :skip_nodes => params[:skip_nodes],
-      :skip_data  => params[:skip_data],
+      :with_nodes => params[:with_nodes],
+      :with_data  => params[:with_data],
     })
 
     if(segments.nil? || segments.segments.nil?)
