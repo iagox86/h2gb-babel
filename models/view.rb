@@ -40,16 +40,45 @@ class View < ActiveRestClient::Base
     })
   end
 
-  def get_segments(params = {})
-    return get_stuff("/views/:view_id/segments", {
-      :names      => params[:names],
+  def get_segments(names, params = {})
+    segments = get_stuff("/views/:view_id/segments", {
+      :names      => names,
       :skip_nodes => params[:skip_nodes],
       :skip_data  => params[:skip_data],
     })
+
+    if(segments.nil? || segments.segments.nil?)
+      raise(Exception, "Couldn't find the segment!")
+    end
+
+    segments = segments.segments
+    segments.each do |s|
+      if(!s.data.nil?)
+        s.data = Base64.decode64(s.data)
+      end
+    end
+
+    return segments
+  end
+
+  def get_segment(name, params = {})
+    if(!name.is_a?(String))
+      raise(Exception, "The name parameter should probably be a string")
+    end
+
+    result = get_segments(name, params)
+    if(result.size() == 0)
+      raise(Exception, "Couldn't find a segment with that name!")
+    end
+    if(result.size() > 1)
+      raise(Exception, "More than one result had that name!")
+    end
+
+    return result[0]
   end
 
 
-  def delete_node()
+  def delete_node(name)
     return post_stuff("/views/:view_id/delete_segment", {
       :segment => name,
     })

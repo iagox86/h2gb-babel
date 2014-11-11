@@ -53,8 +53,20 @@ begin
   binary_again = Binary.find(:binary_id => binary_id)
   puts(binary_again.inspect)
   binary = binary_again
+  if(binary.name != "Binary Test")
+    puts("Binary has the wrong name!")
+    exit
+  end
 
-  # TODO: Test the update
+  puts("** UPDATE A BINARY")
+  binary.name = "new binary name"
+  binary.save()
+  binary = Binary.find(:binary_id => binary_id)
+  if(binary.name != "new binary name")
+    puts("Binary update failed!")
+    exit
+  end
+  puts(binary.inspect)
 
   puts()
   puts("** CREATE A WORKSPACE")
@@ -88,20 +100,25 @@ begin
   puts("** FIND THE WORKSPACE")
   workspace = Workspace.find(:workspace_id => workspace_id)
   puts(workspace.inspect)
+  if(workspace.name != "test workspace")
+    puts("Workspace created has the wrong name!")
+    exit
+  end
 
   puts()
   puts("** UPDATE THE WORKSPACE")
   workspace.name = "new workspace name"
   workspace.save()
   workspace = Workspace.find(:workspace_id => workspace_id)
+  if(workspace.name != "new workspace name")
+    puts("Workspace update failed!")
+    exit
+  end
   puts(workspace.inspect)
-  # TODO: Test the update
-
-  # TODO: Test the get / set
 
   puts()
-  puts("** CREATE view")
-  view = View.create(:workspace_id => workspace_id)
+  puts("** CREATE VIEW")
+  view = View.create(:workspace_id => workspace_id, :name => "view name")
   puts(view.inspect)
   view_id = view.view_id
 
@@ -125,26 +142,78 @@ begin
   puts("** FIND VIEW")
   view = View.find(:view_id => view_id)
   puts(view.inspect)
+  if(view.name != "view name")
+    puts("The view's name was wrong!")
+    exit
+  end
+
+  puts()
+  puts("** UPDATE THE VIEW")
+  view.name = "new view name"
+  view.save()
+  view = View.find(:view_id => view_id)
+  if(view.name != "new view name")
+    puts("view update failed!")
+    exit
+  end
+  puts(view.inspect)
 
   puts()
   puts("** CREATE SEGMENT")
-  segment = view.new_segment("s1", 0x00000000, 0x00004000, "A" * 32)
+  segment = view.new_segment("s1", 0x00000000, 0x00004000, "A" * 8)
   puts(segment.inspect)
 
   puts()
   puts("** FIND SEGMENT (without nodes + without data)")
-  segments = view.get_segments(:names => "s1", :skip_nodes => true, :skip_data => true)
+  segments = view.get_segments("s1", :skip_nodes => true, :skip_data => true)
   puts(segments.inspect)
+  segments.each do |s|
+    if(s.nodes.count() > 0)
+      pp s.nodes
+      puts("The segment returned nodes that it wasn't supposed to!")
+      exit
+    end
+  end
+  if(segments.count() != 1)
+    puts("It didn't return exactly one segment!")
+    exit
+  end
 
   puts()
   puts("** FIND SEGMENT (without nodes + with data)")
-  segments = view.get_segments(:names => "s1", :skip_nodes => true, :skip_data => false)
+  segments = view.get_segments("s1", :skip_nodes => true, :skip_data => false)
   puts(segments.inspect)
+  segments.each do |s|
+    if(s.nodes.count() > 0)
+      pp s.nodes
+      puts("The segment returned nodes that it wasn't supposed to!")
+      exit
+    end
+  end
+  if(segments.count() != 1)
+    puts("It didn't return exactly one segment!")
+    exit
+  end
 
   puts()
   puts("** FIND SEGMENT (with everything)")
-  segments = view.get_segments(:names => "s1")
-  puts(segments.inspect)
+  segment = view.get_segment("s1")
+  pp segment
+  if(segment.data != "A" * 8)
+    puts("The segment had the wrong data!")
+    exit
+  end
+  if(segment.nodes.count() != 8)
+    puts("It didn't return the right number of nodes!")
+    exit
+  end
+  segment.nodes.each do |n|
+    if(n.node.type != 'undefined')
+      puts("At least one node is the wrong type!")
+      puts(n.type)
+      exit
+    end
+  end
 
   puts()
   puts("** FIND ALL SEGMENTS (no nodes + data)")
