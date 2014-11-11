@@ -9,6 +9,8 @@ require 'models/binary'
 require 'models/view'
 require 'models/workspace'
 
+require 'models/nubinary'
+
 require 'pp' # TODO: Debug
 
 binary_id    = nil
@@ -18,12 +20,14 @@ view_id      = nil
 begin
   puts()
   puts("** CREATE A BINARY")
-  binary = Binary.create(
+  binary = NuBinary.create(
     :name => "Binary Test",
     :comment => "Test binary",
     :data => Base64.encode64("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
   )
-  binary_id = binary.binary_id
+  puts(binary.inspect)
+  puts(binary.o.inspect)
+  binary_id = binary.o[:binary_id]
 
   if(!binary_id)
     puts("A valid binary wasn't returned!")
