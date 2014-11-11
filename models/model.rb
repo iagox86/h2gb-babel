@@ -42,8 +42,11 @@ class Model
     if(use_body)
       result = method.call(url, :body => JSON.pretty_generate(params))
     else
-      # TODO
-      raise(NotImplementedError, "TODO")
+      params.each_pair do |k, v|
+        url += params.to_query()
+      end
+
+      result = method.call(url)
     end
 
     # TODO: Check return status
@@ -56,11 +59,8 @@ class Model
   end
 
   def Model.get_stuff(url, params = {})
-    url = format_url(url, params)
-
-    return self.class.new(HTTParty.get(url).parsed_response())
+    return Model.do_request(self.method(:get), url, false, params)
   end
-
   def get_stuff(url, params = {})
     return Model.get_stuff(url, params.merge(@o))
   end
@@ -68,7 +68,6 @@ class Model
   def Model.post_stuff(url, params = {})
     return Model.do_request(self.method(:post), url, true, params)
   end
-
   def post_stuff(url, params = {})
     return Model.post_stuff(url, params.merge(@o))
   end

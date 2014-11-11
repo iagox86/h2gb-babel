@@ -16,6 +16,10 @@ class NuBinary < Model
   def NuBinary.create(params)
     return post_stuff('/binaries', params)
   end
+
+  def NuBinary.all(params = {})
+    return get_stuff('/binaries', params)
+  end
 end
 
 

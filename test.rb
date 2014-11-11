@@ -39,10 +39,10 @@ begin
 
   puts()
   puts("** GET ALL BINARIES (should include the new one)")
-  all_binaries = Binary.all()
+  all_binaries = NuBinary.all()
   good = false
-  all_binaries.binaries.each do |b|
-    if(b.binary_id == binary_id)
+  all_binaries.o[:binaries].each do |b|
+    if(b[:binary_id] == binary_id)
       good = true
       puts("  * Found our new binary!")
     end
@@ -51,6 +51,8 @@ begin
     puts("Couldn't find out new binary!")
     exit
   end
+
+  exit
 
   puts()
   puts("** FIND A BINARY")
