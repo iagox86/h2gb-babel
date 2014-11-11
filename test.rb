@@ -9,8 +9,6 @@ require 'models/binary'
 require 'models/view'
 require 'models/workspace'
 
-require 'models/nubinary'
-
 require 'pp' # TODO: Debug
 
 binary_id    = nil
@@ -20,7 +18,7 @@ view_id      = nil
 begin
   puts()
   puts("** CREATE A BINARY")
-  binary = NuBinary.create(
+  binary = Binary.create(
     :name => "Binary Test",
     :comment => "Test binary",
     :data => Base64.encode64("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
@@ -39,7 +37,7 @@ begin
 
   puts()
   puts("** GET ALL BINARIES (should include the new one)")
-  all_binaries = NuBinary.all()
+  all_binaries = Binary.all()
   good = false
   all_binaries.o[:binaries].each do |b|
     if(b[:binary_id] == binary_id)
@@ -54,7 +52,7 @@ begin
 
   puts()
   puts("** FIND A BINARY")
-  binary_again = NuBinary.find(binary_id)
+  binary_again = Binary.find(binary_id)
   puts(binary_again.inspect)
   binary = binary_again
   if(binary.o[:name] != "Binary Test")
@@ -69,7 +67,7 @@ begin
 
   puts()
   puts("** VERIFY THE UPDATE")
-  binary = NuBinary.find(binary_id)
+  binary = Binary.find(binary_id)
   puts(binary.inspect)
   if(binary.o[:name] != "new binary name")
     puts("Binary update failed!")
@@ -297,7 +295,7 @@ ensure
   if(!binary_id.nil?)
     puts()
     puts("** DELETE THE BINARY")
-    puts(NuBinary.find(binary_id).delete().inspect())
+    puts(Binary.find(binary_id).delete().inspect())
   else
     puts("** NO BINARY TO DELETE")
   end

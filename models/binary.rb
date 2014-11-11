@@ -2,38 +2,30 @@
 # Create on November 4, 2014
 # By Ron Bowes
 
-class Binary < ActiveRestClient::Base
-  base_url HOST
-  request_body_type :json
+require 'models/model'
 
-  include ActiveRestExtras
-
-  get    :all,    "/binaries"
-  get    :find,   "/binaries/:binary_id"
-  put    :save,   "/binaries/:binary_id"
-  post   :create, "/binaries"
-
-  # This doesn't work for some reason...
-  #delete :delete, "/binaries/:binary_id"
-
-  # Transparently encode base64 in outbound requests
-  before_request do |name, request|
-    # Convert 'data' to base64, if it's present
-    if(!request.post_params[:data].nil?)
-      request.post_params[:data] = Base64.encode64(request.post_params[:data])
-    end
+class Binary < Model
+  def initialize(params = {})
+    super(params)
   end
 
-  # Transparently decode base64 in the server's response
-  def Binary.find(id)
-    b = super(id)
-    b.data = Base64.decode64(b.data)
-    return b
+  def Binary.find(id, params = {})
+    return get_stuff(Binary, '/binaries/:binary_id', params.merge({ :binary_id => id }))
   end
 
-  def delete()
-    return delete_stuff("/binaries/:binary_id")
+  def Binary.create(params)
+    return post_stuff(Binary, '/binaries', params)
+  end
+
+  def Binary.all(params = {})
+    return get_stuff(Binary, '/binaries', params)
+  end
+
+  def save(params = {})
+    return put_stuff('/binaries/:binary_id', params.merge(self.o))
+  end
+
+  def delete(params = {})
+    return delete_stuff('/binaries/:binary_id', params.merge({:binary_id => self.o[:binary_id]}))
   end
 end
-
-
