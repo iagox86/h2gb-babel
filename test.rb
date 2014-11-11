@@ -52,27 +52,31 @@ begin
     exit
   end
 
-  exit
-
   puts()
   puts("** FIND A BINARY")
-  binary_again = Binary.find(:binary_id => binary_id)
+  binary_again = NuBinary.find(binary_id)
   puts(binary_again.inspect)
   binary = binary_again
-  if(binary.name != "Binary Test")
+  if(binary.o[:name] != "Binary Test")
     puts("Binary has the wrong name!")
     exit
   end
 
+  puts()
   puts("** UPDATE A BINARY")
-  binary.name = "new binary name"
-  binary.save()
-  binary = Binary.find(:binary_id => binary_id)
-  if(binary.name != "new binary name")
+  binary.o[:name] = "new binary name"
+  puts(binary.save().inspect)
+
+  puts()
+  puts("** VERIFY THE UPDATE")
+  binary = NuBinary.find(binary_id)
+  puts(binary.inspect)
+  if(binary.o[:name] != "new binary name")
     puts("Binary update failed!")
     exit
   end
-  puts(binary.inspect)
+
+  # TODO: Inspect the body contents
 
   puts()
   puts("** CREATE A WORKSPACE")
@@ -293,7 +297,7 @@ ensure
   if(!binary_id.nil?)
     puts()
     puts("** DELETE THE BINARY")
-    puts(Binary.find(:binary_id => binary_id).delete().inspect())
+    puts(NuBinary.find(binary_id).delete().inspect())
   else
     puts("** NO BINARY TO DELETE")
   end

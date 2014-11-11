@@ -16,10 +16,6 @@ class Model
     @o = o
   end
 
-  def Model.handle_response(response)
-    return self.new(response.parsed_response)
-  end
-
   def Model.format_url(url, params = {})
     params.each_pair do |k, v|
       if(!url.index(":#{k}").nil?)
@@ -30,7 +26,7 @@ class Model
     return HOST + url
   end
 
-  def Model.do_request(method, url, use_body, params = {})
+  def Model.do_request(cls, method, url, use_body, params = {})
     # TODO: Before hooks
 #    if(self.respond_to?(:before_request))
 #      params = before_request(params)
@@ -55,38 +51,36 @@ class Model
 
     # TODO: After hooks
 
-    return self.new(result)
+    return cls.new(result)
   end
 
-  def Model.get_stuff(url, params = {})
-    return Model.do_request(self.method(:get), url, false, params)
+  def Model.get_stuff(cls, url, params = {})
+    return Model.do_request(cls, self.method(:get), url, false, params)
   end
   def get_stuff(url, params = {})
-    return Model.get_stuff(url, params.merge(@o))
+    return Model.get_stuff(self.class, url, params)
   end
 
-  def Model.post_stuff(url, params = {})
-    return Model.do_request(self.method(:post), url, true, params)
+  def Model.post_stuff(cls, url, params = {})
+    return Model.do_request(cls, self.method(:post), url, true, params)
   end
   def post_stuff(url, params = {})
-    return Model.post_stuff(url, params.merge(@o))
+    return Model.post_stuff(self.class, url, params)
   end
 
-  def Model.put_stuff(url, params = {})
-    url = format_url(url, params)
-    return self.class.new(HTTParty.put(url).parsed_response(), :body => params)
+  def Model.put_stuff(cls, url, params = {})
+    return Model.do_request(cls, self.method(:put), url, true, params)
   end
 
   def put_stuff(url, params = {})
-    return Model.put_stuff(url, params.merge(@o))
+    return Model.put_stuff(self.class, url, params.merge(@o))
   end
 
-  def Model.delete_stuff(url, params = {})
-    url = format_url(url, params)
-    return self.class.new(HTTParty.delete(url).parsed_response())
+  def Model.delete_stuff(cls, url, params = {})
+    return Model.do_request(cls, self.method(:delete), url, false, params)
   end
 
   def delete_stuff(url, params = {})
-    return Model.delete_stuff(url, params.merge(@o))
+    return Model.delete_stuff(self.class, url, params)
   end
 end
