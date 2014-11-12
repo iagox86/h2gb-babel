@@ -193,7 +193,7 @@ begin
     exit
   end
   segments.each do |s|
-    if(s[:nodes].length() > 0)
+    if(!s[:nodes].nil?)
       pp s.nodes
       puts("The segment returned nodes that it wasn't supposed to!")
       exit
@@ -212,7 +212,7 @@ begin
   segments = view.get_segments("s1")
   puts(segments.inspect)
   segments.each do |s|
-    if(s[:nodes].length() > 0)
+    if(!s[:nodes].nil?)
       puts("The segment returned nodes that it wasn't supposed to!")
       exit
     end
@@ -234,7 +234,7 @@ begin
   segments = view.get_segments("s1", :with_nodes => false, :with_data => true)
   puts(segments.inspect)
   segments.each do |s|
-    if(s[:nodes].length() > 0)
+    if(!s[:nodes].nil?)
       puts("The segment returned nodes that it wasn't supposed to!")
       exit
     end
@@ -257,9 +257,9 @@ begin
     exit
   end
   segment[:nodes].each do |n|
-    if(n[:node][:type] != 'undefined')
+    if(n[:type] != 'undefined')
       puts("At least one node is the wrong type!")
-      puts("Expected: 'undefined', found: '#{n[:node][:type]}'")
+      puts("Expected: 'undefined', found: '#{n[:type]}'")
       exit
     end
   end
@@ -311,6 +311,56 @@ begin
 #    puts("The redo didn't delete the segment like it should have!")
 #    exit
 #  end
+  # TODO: Use REDO for this instead once I fix REDO
+  puts()
+  puts("** DELETE SEGMENT")
+  puts(view.delete_segment("s1").inspect())
+
+  puts()
+  puts("** CREATING A NEW SEGMENT")
+  segment = view.new_segment("s2", 0x00000000, 0x00004000, "AAAAAAAA")
+  puts(segment.inspect)
+
+  puts()
+  puts("** CREATING TWO 32-BIT NODES")
+  result = view.new_node(0x00000000, "dword", 4, "db 41414141", { :test => '123', :test2 => 456 }, 0x00000004)
+  if(result[:segments][0][:nodes].length() != 5)
+    puts("The wrong number of 'changed nodes' were returned for the first node!")
+    puts(result.inspect)
+    exit
+  end
+
+  result = view.new_node(0x00000004, "dword", 4, "db 42424242", { :test => 321, :test2 => '654' }, 0x00000000)
+  if(result[:segments][0][:nodes].length() != 2)
+    puts("The wrong number of 'changed nodes' were returned for the first node!")
+    puts(result.inspect)
+    exit
+  end
+
+  puts()
+  puts("** CHECKING IF THEY WERE CREATED PROPERLY")
+  segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
+
+  if(segment[:nodes].length() != 2)
+    puts("The wrong number of nodes were returned")
+    exit
+  end
+
+  node1 = segment[:nodes][0]
+  pp node1
+  if(node1[:type] != 'dword')
+    puts("node1 was the wrong type!")
+    exit
+  end
+
+  node2 = segment[:nodes][1]
+  pp node2
+  if(node2[:type] != 'dword')
+    puts("node2 was the wrong type!")
+    exit
+  end
+
+  # TODO: Create nodes using an array
 
   puts("ALL DONE! EVERYTHING IS GOOD!!!")
 rescue Exception => e

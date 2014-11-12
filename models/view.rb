@@ -30,11 +30,11 @@ class View < Model
   end
 
   def undo(params = {})
-    return post_stuff('/views/:view_id/undo', params.merge({:view_id => self.o[:view_id]}))
+    return post_stuff('/views/:view_id/undo', params.merge({:view_id => self.o[:view_id]})).o
   end
 
   def redo(params = {})
-    return post_stuff('/views/:view_id/redo', params.merge({:view_id => self.o[:view_id]}))
+    return post_stuff('/views/:view_id/redo', params.merge({:view_id => self.o[:view_id]})).o
   end
 
   def new_segment(name, address, file_address, data)
@@ -44,7 +44,7 @@ class View < Model
       :address      => address,
       :file_address => file_address,
       :data         => Base64.encode64(data),
-    })
+    }).o
   end
 
   # name can be a string or an array
@@ -52,19 +52,20 @@ class View < Model
     return post_stuff("/views/:view_id/delete_segment", {
       :view_id  => self.o[:view_id],
       :segments => name,
-    })
+    }).o
   end
 
   def new_node(address, type, length, value, details, references)
-    return post_stuff("/views/:view_id/create_node", {
-      :view_id      => self.o[:view_id],
-      :address      => address,
-      :type         => type,
-      :length       => length,
-      :value        => value,
-      :details      => details,
-      :references   => references,
-    })
+    return post_stuff("/views/:view_id/new_node", { 
+      :view_id => self.o[:view_id],
+      :node => {
+        :address      => address,
+        :type         => type,
+        :length       => length,
+        :value        => value,
+        :details      => details,
+        :references   => references,
+    }}).o
   end
 
   def get_segments(names = nil, params = {})
@@ -73,9 +74,9 @@ class View < Model
       :names      => names,
       :with_nodes => params[:with_nodes],
       :with_data  => params[:with_data],
-    })
+    }).o
 
-    segments = segments.o[:segments]
+    segments = segments[:segments]
     segments.each do |s|
       if(!s[:data].nil?)
         s[:data] = Base64.decode64(s[:data])
@@ -106,6 +107,6 @@ class View < Model
     return post_stuff("/views/:view_id/delete_segment", {
       :view_id => self.o[:view_id],
       :segment => name,
-    })
+    }).o
   end
 end
