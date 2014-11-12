@@ -323,7 +323,7 @@ begin
 
   puts()
   puts("** CREATING TWO 32-BIT NODES")
-  result = view.new_node(0x00000000, "dword", 4, "db 41414141", { :test => '123', :test2 => 456 }, 0x00000004)
+  result = view.new_node(0x00000000, "dword", 4, "db 41414141", { :test => '123', :test2 => 456 }, [0x00000004])
   if(result[:segments][0][:nodes].length() != 5)
     puts("The wrong number of 'changed nodes' were returned for the first node!")
     puts(result.inspect)
@@ -352,11 +352,19 @@ begin
     puts("node1 was the wrong type!")
     exit
   end
+  if(node1[:xrefs].length() != 1 || node1[:xrefs][0] != 4)
+    puts("node1's xrefs were wrong!")
+    exit
+  end
 
   node2 = segment[:nodes][1]
   pp node2
   if(node2[:type] != 'dword')
     puts("node2 was the wrong type!")
+    exit
+  end
+  if(node2[:xrefs].length() != 1 || node2[:xrefs][0] != 0)
+    puts("node2's xrefs were wrong!")
     exit
   end
 

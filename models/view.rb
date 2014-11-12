@@ -59,12 +59,12 @@ class View < Model
     return post_stuff("/views/:view_id/new_node", { 
       :view_id => self.o[:view_id],
       :node => {
-        :address      => address,
-        :type         => type,
-        :length       => length,
-        :value        => value,
-        :details      => details,
-        :references   => references,
+        :address => address,
+        :type    => type,
+        :length  => length,
+        :value   => value,
+        :details => details,
+        :refs    => references,
     }}).o
   end
 
