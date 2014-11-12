@@ -2,9 +2,6 @@ $LOAD_PATH << File.dirname(__FILE__)
 
 HOST = ARGV[0] || "http://localhost:9292"
 
-require 'active_rest_client'
-
-require 'active_rest_extras'
 require 'models/binary'
 require 'models/view'
 require 'models/workspace'

@@ -3,9 +3,8 @@
 # By Ron Bowes
 
 require 'httparty'
+require 'uri'
 require 'pp' # TODO: Debug
-
-HOST = "http://localhost:9292"
 
 class Model
   include HTTParty
@@ -38,7 +37,13 @@ class Model
     if(use_body)
       result = method.call(url, :body => JSON.pretty_generate(params))
     else
-      url += "?" + params.to_query()
+      new_params = []
+      params.each_pair do |k, v|
+        new_params << "%s=%s" % [URI::encode(k.to_s()), URI::encode(v.to_s())]
+      end
+
+      url = url + "?" + new_params.join('&')
+
       result = method.call(url)
     end
 
