@@ -312,6 +312,7 @@ begin
 #    exit
 #  end
   # TODO: Use REDO for this instead once I fix REDO
+
   puts()
   puts("** DELETE SEGMENT")
   puts(view.delete_segment("s1").inspect())
@@ -329,6 +330,9 @@ begin
     puts(result.inspect)
     exit
   end
+  puts()
+  puts("1 (should be one defined node, 5 undefined):")
+  view.print()
 
   result = view.new_node(0x00000004, "dword", 4, "db 42424242", { :test => 321, :test2 => '654' }, 0x00000000)
   if(result[:segments][0][:nodes].length() != 2)
@@ -336,18 +340,20 @@ begin
     puts(result.inspect)
     exit
   end
+  puts()
+  puts("2 (should be two defined nodes):")
+  view.print()
 
   puts()
   puts("** CHECKING IF THEY WERE CREATED PROPERLY")
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
+  pp segment
 
   if(segment[:nodes].length() != 2)
     puts("The wrong number of nodes were returned")
     exit
   end
-
   node1 = segment[:nodes][0]
-  pp node1
   if(node1[:type] != 'dword')
     puts("node1 was the wrong type!")
     exit
@@ -358,7 +364,6 @@ begin
   end
 
   node2 = segment[:nodes][1]
-  pp node2
   if(node2[:type] != 'dword')
     puts("node2 was the wrong type!")
     exit
@@ -367,6 +372,20 @@ begin
     puts("node2's xrefs were wrong!")
     exit
   end
+
+  puts("*** CREATING AN OVERLAPPING NODE")
+  result = view.new_node(0x00000002, "dword", 4, "db 43434343", { }, [])
+#  if(result[:segments][0][:nodes].length() != 5)
+#    puts("The wrong number of 'changed nodes' were returned for the overlapping node!")
+#    puts(result.inspect)
+#    exit
+#  end
+
+  view.print()
+
+  puts("Press <enter>")
+  gets()
+
 
   # TODO: Create nodes using an array
 

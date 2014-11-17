@@ -109,4 +109,16 @@ class View < Model
       :segment => name,
     }).o
   end
+
+  def print()
+    segments = get_segments(nil, :with_nodes => true, :with_data => true)
+
+    segments.each do |segment|
+      segment[:nodes].each do |node|
+        raw = Base64.decode64(node[:raw])
+        raw = raw + (" " * (12 - raw.length()))
+        puts("%s:%08x %s %s [%s]" % [segment[:name], node[:address], raw, node[:value], node[:type]])
+      end
+    end
+  end
 end
