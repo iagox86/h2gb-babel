@@ -342,7 +342,7 @@ begin
   puts("** CREATING ANOTHER 32-BIT NODE")
   result = view.new_node('s2', 0x00000004, "dword", 4, "db 42424242", { :test => 321, :test2 => '654' }, 0x00000000)
   if(result[:segments][0][:nodes].length() != 2)
-    puts("The wrong number of 'changed nodes' were returned for the first node!")
+    puts("The wrong number of 'changed nodes' were returned for the second node!")
     puts(result.inspect)
     exit
   end
@@ -351,12 +351,29 @@ begin
   view.print()
 
   puts()
-  puts("** TRYING TO UNDO THE SECOND NODE")
+  puts("** CREATING AN OVERLAPPING 32-BIT NODE")
+  result = view.new_node('s2', 0x00000002, "dword", 4, "db 43434343", { :test => 321, :test2 => '654' }, 0x00000000)
+  if(result[:segments][0][:nodes].length() != 5)
+    puts("The wrong number of 'changed nodes' were returned for the third node (expected 5, got #{result[:segments][0][:nodes].length()})!")
+    pp(result)
+    exit
+  end
+  puts()
+  puts("3 (should be one defined node, with two undefined on either side):")
+  view.print()
+
+  puts()
+  puts("** TRYING TO UNDO THE THIRD NODE (should have two defined nodes, 41414141 and 42424242)")
   puts(view.undo())
   view.print()
 
   puts()
-  puts("** TRYING TO UNDO THE FIRST NODE")
+  puts("** TRYING TO UNDO THE SECOND NODE (should have one defined node, 41414141)")
+  puts(view.undo())
+  view.print()
+
+  puts()
+  puts("** TRYING TO UNDO THE FIRST NODE (should have no defined nodes)")
   puts(view.undo())
   view.print()
 
