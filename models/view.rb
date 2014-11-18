@@ -55,9 +55,10 @@ class View < Model
     }).o
   end
 
-  def new_node(address, type, length, value, details, references)
+  def new_node(segment, address, type, length, value, details, references)
     return post_stuff("/views/:view_id/new_node", { 
       :view_id => self.o[:view_id],
+      :segment => segment,
       :node => {
         :address => address,
         :type    => type,

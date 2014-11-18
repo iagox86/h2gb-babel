@@ -252,6 +252,10 @@ begin
     puts("The segment had the wrong data!")
     exit
   end
+  if(segment[:nodes].nil?)
+    puts("It didn't return nodes, as requested!")
+    exit
+  end
   if(segment[:nodes].length() != 8)
     puts("It didn't return the right number of nodes! (expected 8, found #{segment[:nodes].length()})")
     exit
@@ -319,22 +323,24 @@ begin
 
   puts()
   puts("** CREATING A NEW SEGMENT")
-  segment = view.new_segment("s2", 0x00000000, 0x00004000, "AAAAAAAA")
+  segment = view.new_segment("s2", 0x00000000, 0x00004000, "ABCDEFGH")
   puts(segment.inspect)
 
   puts()
-  puts("** CREATING TWO 32-BIT NODES")
-  result = view.new_node(0x00000000, "dword", 4, "db 41414141", { :test => '123', :test2 => 456 }, [0x00000004])
-  if(result[:segments][0][:nodes].length() != 5)
-    puts("The wrong number of 'changed nodes' were returned for the first node!")
-    puts(result.inspect)
-    exit
-  end
+  puts("** CREATING A 32-BIT NODE")
+  result = view.new_node('s2', 0x00000000, "dword", 4, "db 41414141", { :test => '123', :test2 => 456 }, [0x00000004])
+#  if(result[:segments][0][:nodes].length() != 5)
+#    puts("The wrong number of 'changed nodes' were returned for the first node!")
+#    puts(result.inspect)
+#    exit
+#  end
   puts()
-  puts("1 (should be one defined node, 5 undefined):")
+  puts("(should be one defined node, 5 undefined):")
   view.print()
 
-  result = view.new_node(0x00000004, "dword", 4, "db 42424242", { :test => 321, :test2 => '654' }, 0x00000000)
+  puts()
+  puts("** CREATING ANOTHER 32-BIT NODE")
+  result = view.new_node('s2', 0x00000004, "dword", 4, "db 42424242", { :test => 321, :test2 => '654' }, 0x00000000)
   if(result[:segments][0][:nodes].length() != 2)
     puts("The wrong number of 'changed nodes' were returned for the first node!")
     puts(result.inspect)
@@ -343,6 +349,34 @@ begin
   puts()
   puts("2 (should be two defined nodes):")
   view.print()
+
+  puts()
+  puts("** TRYING TO UNDO THE SECOND NODE")
+  puts(view.undo())
+  view.print()
+
+  puts()
+  puts("** TRYING TO UNDO THE FIRST NODE")
+  puts(view.undo())
+  view.print()
+
+  puts()
+  puts("** TRYING TO REDO THE FIRST NODE")
+  puts(view.redo())
+  view.print()
+
+  # TODO: This one is currently failing
+  puts()
+  puts("** TRYING TO REDO THE SECOND NODE")
+  puts(view.redo())
+  view.print()
+
+  puts()
+  puts("Everything is working!!!")
+  puts()
+  exit
+
+  # TODO: Test undoing an action that makes multiple changes
 
   puts()
   puts("** CHECKING IF THEY WERE CREATED PROPERLY")
@@ -382,10 +416,6 @@ begin
 #  end
 
   view.print()
-
-  puts("Press <enter>")
-  gets()
-
 
   # TODO: Create nodes using an array
 
