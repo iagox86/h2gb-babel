@@ -118,7 +118,11 @@ class View < Model
       segment[:nodes].each do |node|
         raw = Base64.decode64(node[:raw])
         raw = raw + (" " * (12 - raw.length()))
-        puts("%s:%08x %s %s [%s]" % [segment[:name], node[:address], raw, node[:value], node[:type]])
+
+        if(node[:xrefs])
+          xrefs = node[:xrefs] ? (' XREFS: %s' % node[:xrefs].map() { |x| '0x%x' % x }.join(", ")) : ""
+        end
+        puts("%s:%08x %s %s [%s]%s" % [segment[:name], node[:address], raw, node[:value], node[:type], xrefs])
       end
     end
   end

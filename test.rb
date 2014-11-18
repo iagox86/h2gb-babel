@@ -340,7 +340,7 @@ begin
 
   puts()
   puts("** CREATING ANOTHER 32-BIT NODE")
-  result = view.new_node('s2', 0x00000004, "dword", 4, "db 42424242", { :test => 321, :test2 => '654' }, 0x00000000)
+  result = view.new_node('s2', 0x00000004, "dword", 4, "db 42424242", { :test => 321, :test2 => '654' }, [0x00000000])
   if(result[:segments][0][:nodes].length() != 2)
     puts("The wrong number of 'changed nodes' were returned for the second node!")
     puts(result.inspect)
@@ -352,7 +352,7 @@ begin
 
   puts()
   puts("** CREATING AN OVERLAPPING 32-BIT NODE")
-  result = view.new_node('s2', 0x00000002, "dword", 4, "db 43434343", { :test => 321, :test2 => '654' }, 0x00000000)
+  result = view.new_node('s2', 0x00000002, "dword", 4, "db 43434343", { :test => 321, :test2 => '654' }, [0x00000000])
   if(result[:segments][0][:nodes].length() != 5)
     puts("The wrong number of 'changed nodes' were returned for the third node (expected 5, got #{result[:segments][0][:nodes].length()})!")
     pp(result)
@@ -452,27 +452,39 @@ ensure
   puts("CLEANING UP")
   puts()
 
-  if(!view_id.nil?)
-    puts()
-    puts("** DELETING VIEW")
-    puts(View.find(view_id).delete().inspect())
-  else
-    puts("** NO VIEW TO DELETE")
+  begin
+    if(!view_id.nil?)
+      puts()
+      puts("** DELETING VIEW")
+      puts(View.find(view_id).delete().inspect())
+    else
+      puts("** NO VIEW TO DELETE")
+    end
+  rescue Exception => e
+    puts("Delete failed: #{e}")
   end
 
-  if(!workspace_id.nil?)
-    puts()
-    puts("** DELETE THE WORKSPACE")
-    puts(Workspace.find(workspace_id).delete().inspect())
-  else
-    puts("** NO WORKSPACE TO DELETE")
+  begin
+    if(!workspace_id.nil?)
+      puts()
+      puts("** DELETE THE WORKSPACE")
+      puts(Workspace.find(workspace_id).delete().inspect())
+    else
+      puts("** NO WORKSPACE TO DELETE")
+    end
+  rescue Exception => e
+    puts("Delete failed: #{e}")
   end
 
-  if(!binary_id.nil?)
-    puts()
-    puts("** DELETE THE BINARY")
-    puts(Binary.find(binary_id).delete().inspect())
-  else
-    puts("** NO BINARY TO DELETE")
+  begin
+    if(!binary_id.nil?)
+      puts()
+      puts("** DELETE THE BINARY")
+      puts(Binary.find(binary_id).delete().inspect())
+    else
+      puts("** NO BINARY TO DELETE")
+    end
+  rescue Exception => e
+    puts("Delete failed: #{e}")
   end
 end
