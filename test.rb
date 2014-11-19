@@ -328,17 +328,31 @@ begin
 
   puts()
   puts("** CREATING A NEW SEGMENT")
-  segment = view.new_segment("s2", 0x00000000, 0x00004000, "ABCDEFGH")
-  puts(segment.inspect)
+  new_view = view.new_segment("s2", 0x00000000, 0x00004000, "ABCDEFGH")
+  segments = new_view[:segments]
+  if(segments.length != 1)
+    puts("Creating a new segment returned the wrong number of segments!")
+    exit
+  end
+  segment = segments[0]
+  if(!segment[:nodes].nil?)
+    puts("Node(s) returned from a new segment!")
+    puts(segment.inspect)
+    exit
+  end
+  if(segment[:name] != 's2')
+    puts("Segment had the wrong name!")
+    exit
+  end
 
   puts()
   puts("** CREATING A 32-BIT NODE")
   result = view.new_node('s2', 0x00000000, "dword", 4, "db 41414141", { :test => '123', :test2 => 456 }, [0x00000004])
-#  if(result[:segments][0][:nodes].length() != 5)
-#    puts("The wrong number of 'changed nodes' were returned for the first node!")
-#    puts(result.inspect)
-#    exit
-#  end
+  if(result[:segments][0][:nodes].length() != 1)
+    puts("The wrong number of 'changed nodes' were returned for the first node!")
+    puts(result.inspect)
+    exit
+  end
   puts()
   puts("(should be one defined node, 5 undefined):")
   view.print()
