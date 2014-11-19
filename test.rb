@@ -168,6 +168,11 @@ begin
     exit
   end
 
+  if(!view.o[:segments].nil?)
+    puts("The view returned segments when it wasn't supposed to!")
+    exit
+  end
+
   puts()
   puts("** UPDATE THE VIEW")
   view.o[:name] = "new view name"

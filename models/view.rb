@@ -71,16 +71,16 @@ class View < Model
 
   def get_segments(names = nil, params = {})
     segments = get_stuff("/views/:view_id/segments", {
-      :view_id    => self.o[:view_id],
-      :names      => names,
-      :with_nodes => params[:with_nodes],
-      :with_data  => params[:with_data],
-    }).o
+      :view_id       => self.o[:view_id],
+      :names         => names,
+    }.merge(params)).o
 
     segments = segments[:segments]
-    segments.each do |s|
-      if(!s[:data].nil?)
-        s[:data] = Base64.decode64(s[:data])
+    if(segments)
+      segments.each do |s|
+        if(!s[:data].nil?)
+          s[:data] = Base64.decode64(s[:data])
+        end
       end
     end
 
