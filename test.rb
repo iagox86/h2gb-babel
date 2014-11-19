@@ -346,7 +346,7 @@ begin
   puts()
   puts("** CREATING ANOTHER 32-BIT NODE")
   result = view.new_node('s2', 0x00000004, "dword", 4, "db 42424242", { :test => 321, :test2 => '654' }, [0x00000000])
-  if(result[:segments][0][:nodes].length() != 2)
+  if(result[:segments][0][:nodes].length() != 1)
     puts("The wrong number of 'changed nodes' were returned for the second node!")
     puts(result.inspect)
     exit
