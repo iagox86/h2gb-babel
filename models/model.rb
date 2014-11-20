@@ -4,7 +4,6 @@
 
 require 'httparty'
 require 'uri'
-require 'pp' # TODO: Debug
 
 class Model
   include HTTParty
@@ -38,7 +37,6 @@ class Model
       result = method.call(url, :body => JSON.pretty_generate(params))
     else
       new_params = []
-      pp(params)
       params.each_pair do |k, v|
         new_params << "%s=%s" % [URI::encode(k.to_s()), URI::encode(v.to_s())]
       end

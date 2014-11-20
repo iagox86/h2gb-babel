@@ -30,11 +30,11 @@ class View < Model
   end
 
   def undo(params = {})
-    return post_stuff('/views/:view_id/undo', params.merge({:view_id => self.o[:view_id]})).o
+    return post_stuff('/views/:view_id/undo', params.merge({:view_id => self.o[:view_id]})).o[:segments]
   end
 
   def redo(params = {})
-    return post_stuff('/views/:view_id/redo', params.merge({:view_id => self.o[:view_id]})).o
+    return post_stuff('/views/:view_id/redo', params.merge({:view_id => self.o[:view_id]})).o[:segments]
   end
 
   def new_segment(name, address, file_address, data)
@@ -44,7 +44,7 @@ class View < Model
       :address      => address,
       :file_address => file_address,
       :data         => Base64.encode64(data),
-    }).o
+    }).o[:segments]
   end
 
   # name can be a string or an array
@@ -52,7 +52,7 @@ class View < Model
     return post_stuff("/views/:view_id/delete_segment", {
       :view_id  => self.o[:view_id],
       :segments => name,
-    }).o
+    }).o[:segments]
   end
 
   def new_node(segment, address, type, length, value, details, references)
@@ -66,25 +66,14 @@ class View < Model
         :value   => value,
         :details => details,
         :refs    => references,
-    }}).o
+    }}).o[:segments]
   end
 
   def get_segments(names = nil, params = {})
-    segments = get_stuff("/views/:view_id/segments", {
+    return get_stuff("/views/:view_id/segments", {
       :view_id       => self.o[:view_id],
       :names         => names,
-    }.merge(params)).o
-
-    segments = segments[:segments]
-    if(segments)
-      segments.each do |s|
-        if(!s[:data].nil?)
-          s[:data] = Base64.decode64(s[:data])
-        end
-      end
-    end
-
-    return segments
+    }.merge(params)).o[:segments]
   end
 
   def get_segment(name, params = {})
@@ -97,10 +86,15 @@ class View < Model
       raise(Exception, "Couldn't find a segment with that name!")
     end
     if(result.size() > 1)
-      raise(Exception, "More than one result had that name!")
+      raise(Exception, "More than one result had that name! (Note: that shouldn't be possible...)")
+    end
+    result = result[result.keys[0]]
+
+    if(result[:name] != name)
+      raise(Exception, "It looks like the wrong segment was returned")
     end
 
-    return result[0]
+    return result
   end
 
 
