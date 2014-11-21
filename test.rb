@@ -192,7 +192,6 @@ begin
     :name => "test view"
   )
 
-  puts(view.inspect)
   assert_not_nil(view, "A view is successfully created")
   assert_not_nil(view.o, "The view's object is returned")
   assert_type(view.o, Hash, "The view's object is a hash")
@@ -394,7 +393,6 @@ begin
   title("Attempting another undo, which should delete the new segment")
   view.redo()
   segments = view.get_segments()
-  puts(segments.inspect)
   assert_equal(segments.length, 1, "Making sure there are still 2 segments")
   assert_not_nil(segments[:s1], "The first segment is still present")
   assert_nil(segments[:deleteme], "The new segment is gone")
@@ -585,7 +583,6 @@ begin
 
   title("Making sure it's still in good shape")
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
-  pp segment
   assert_type(segment, Hash, "Checking if the segment was returned")
   assert_type(segment[:nodes], Array, "Checking if nodes are present")
   assert_equal(segment[:nodes].length, 5, "Verifying that the proper number of nodes were returned")
