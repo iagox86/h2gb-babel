@@ -81,13 +81,12 @@ begin
   assert_type(binary.o[:binary_id], Fixnum, "Checking if the binary's id is numeric")
   assert_equal(binary.o[:name], "Binary Test", "Checking if the binary's name is right")
   assert_equal(binary.o[:comment], "Test binary", "Checking if the binary's comment is correct")
-  assert_equal(binary.o[:data], "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "Checking if the binary's data is correct")
+  assert_nil(binary.o[:data], "Checking that the binary's data wasn't returned")
 
   binary_id = binary.o[:binary_id]
 
-  title("Testing retrieving all binaries")
-  all_binaries = Binary.all()
-
+  title("Testing retrieving all binaries (with data)")
+  all_binaries = Binary.all(:with_data => true)
   good = false
   all_binaries.o[:binaries].each do |b|
     if(b[:binary_id] == binary_id)
@@ -101,7 +100,22 @@ begin
   end
   assert(good, "Checking if our binary is present")
 
-  title("Testing searching for a binary")
+  title("Testing retrieving all binaries (without data)")
+  all_binaries = Binary.all(:with_data => false)
+  good = false
+  all_binaries.o[:binaries].each do |b|
+    if(b[:binary_id] == binary_id)
+      good = true
+
+      assert(true, "Checking if our binary is present")
+      assert_equal(b[:name], "Binary Test", "Checking if the binary's name is right")
+      assert_equal(b[:comment], "Test binary", "Checking if the binary's comment is correct")
+      assert_nil(b[:data], "Checking if the binary's data is correctly skipped")
+    end
+  end
+  assert(good, "Checking if our binary is present")
+
+  title("Testing searching for a binary (no data)")
   binary_again = Binary.find(binary_id)
 
   assert_not_nil(binary_again, "The binary is successfully found")
@@ -110,7 +124,18 @@ begin
   assert_equal(binary_again.o[:binary_id],binary.o[:binary_id], "The binary's id value matches the original binary's")
   assert_equal(binary_again.o[:name],     binary.o[:name], "The binary's name maches the original binary's")
   assert_equal(binary_again.o[:comment],  binary.o[:comment], "The binary's comment maches the original binary's")
-  assert_equal(binary_again.o[:data],     binary.o[:data], "The binary's data maches the original binary's")
+  assert_nil(binary_again.o[:data], "Checking that no data was returned when it wasn't requested")
+
+  title("Testing searching for a binary (with data)")
+  binary_again = Binary.find(binary_id, :with_data => true)
+
+  assert_not_nil(binary_again, "The binary is successfully found")
+  assert_not_nil(binary_again.o, "The binary's object is returned")
+  assert_type(binary_again.o, Hash, "The binary's object is a hash")
+  assert_equal(binary_again.o[:binary_id],binary.o[:binary_id], "The binary's id value matches the original binary's")
+  assert_equal(binary_again.o[:name],     binary.o[:name], "The binary's name maches the original binary's")
+  assert_equal(binary_again.o[:comment],  binary.o[:comment], "The binary's comment maches the original binary's")
+  assert_equal(binary_again.o[:data], "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "Checking if the binary's data is correct")
 
   title("Testing saving the binary")
   binary.o[:name] = "new binary name"
@@ -630,21 +655,29 @@ ensure
   end
 
   begin
-      title("Deleting workspace")
+    title("Deleting workspace")
+    if(!workspace_id.nil?)
       result = Workspace.find(workspace_id).delete()
       assert_not_nil(result, "Checking if delete() returned")
       assert_type(result.o, Hash, "Checking if delete() returned a hash")
       assert_equal(result.o[:deleted], true, "Checking if delete() returned successfully")
+    else
+      puts("** NO WORKSPACE TO DELETE")
+    end
   rescue Exception => e
     puts("Delete failed: #{e}")
   end
 
   begin
-      title("Deleting binary")
+    title("Deleting binary")
+    if(!binary_id.nil?)
       result = Binary.find(binary_id).delete()
       assert_not_nil(result, "Checking if delete() returned")
       assert_type(result.o, Hash, "Checking if delete() returned a hash")
       assert_equal(result.o[:deleted], true, "Checking if delete() returned successfully")
+    else
+      puts("** NO BINARY TO DELETE")
+    end
   rescue Exception => e
     puts("Delete failed: #{e}")
   end
