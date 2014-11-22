@@ -13,6 +13,40 @@ class View < Model
     return get_stuff(View, '/views/:view_id', params.merge({ :view_id => id }))
   end
 
+  def edit_segments()
+    if(@o[:segments].nil?)
+      return
+    end
+
+    @o[:segments].map() do |name, segment|
+      yield(segment)
+    end
+  end
+
+  def after_request()
+    # Fix the segments up, as needed
+    edit_segments() do |segment|
+      # If there's data, automatically do the base64 decode
+      if(!segment[:data].nil?)
+        segment[:data] = Base64.decode64(segment[:data])
+      end
+
+      if(!segment[:nodes].nil?)
+        fixed = {}
+        segment[:nodes].each_pair do |k, v|
+          # Fix the base64 raw data
+          v[:raw] = Base64.decode64(v[:raw])
+
+          # Convert the key to an integer value
+          fixed[k.to_s.to_i] = v
+        end
+
+        segment[:nodes] = fixed
+      end
+      segment # return
+    end
+  end
+
   def View.create(params)
     return post_stuff(View, '/workspaces/:workspace_id/new_view', params)
   end

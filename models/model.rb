@@ -50,11 +50,18 @@ class Model
       raise(Exception, "HTTP Request failed for #{url}: #{result.response.to_s}")
     end
 
+    # Parse out the data
     result = JSON.parse(result.response.body, :symbolize_names => true)
 
-    # TODO: After hooks
+    # Create a new class with the result
+    instance = cls.new(result)
 
-    return cls.new(result)
+    # Run 'after' hooks
+    if(instance.respond_to?(:after_request))
+      instance.after_request()
+    end
+
+    return instance
   end
 
   def Model.get_stuff(cls, url, params = {})
