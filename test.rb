@@ -55,6 +55,30 @@ def assert_revision(value, description)
   return result
 end
 
+def assert_node(received, expected, description)
+  expected.each_key do |k|
+    assert_equal(received[k], expected[k], "Checking field #{k} (#{description})")
+  end
+end
+
+def assert_nodes(received, expected, description)
+  title("Checking nodes: #{description}")
+  if(!assert_not_nil(received, "Making sure nodes exist: #{description}"))
+    return
+  end
+
+  assert_equal(received.keys.length, expected.keys.length, "Verifying that the right number of nodes are returned")
+
+  expected.each_key do |address|
+    e = expected[address]
+    r = received[address]
+
+    if(assert_not_nil(received[address], "Checking if the node at address 0x%08x exists" % address))
+      assert_node(r, e, "Checking node at address 0x%08x" % address)
+    end
+  end
+end
+
 def print_stats()
   total = @@pass + @@fail
 
@@ -220,16 +244,16 @@ begin
 
   # Some constants
   NODE0 = {
-    :type => "dword1",
+    :type => "dword0",
     :value => "db 41414141 [I'm at 0x00000000]"
   }
   NODE4 = {
-    :type => "dword1",
-    :value => "db 41414141 [I'm at 0x00000000]"
+    :type => "dword4",
+    :value => "db 42424242 [I'm at 0x00000004]"
   }
   NODE2 = {
-    :type => "dword1",
-    :value => "db 41414141 [I'm at 0x00000000]"
+    :type => "dword2",
+    :value => "db 43434343 [I'm at 0x00000002]"
   }
 
   title("Create a view")
@@ -495,16 +519,13 @@ begin
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
   assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_equal(segment[:nodes].length, 5, "Verifying that five nodes were returned")
-  assert_equal(segment[:nodes][0x00000000][:type],  NODE0[:type],  "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000000][:value], NODE0[:value], "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000004][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000005][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000006][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying node's type")
-
-  assert_equal(segment[:nodes][0x00000004][:address], 4, "Verifying that the location of node 4 is correct (testing my tests, dawg)")
-  assert_equal(segment[:nodes][0x00000004][:xrefs][0], 0, "Verifying the new node's cross reference")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => NODE0,
+    0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
+    0x00000005 => { :type => 'undefined' },
+    0x00000006 => { :type => 'undefined' },
+    0x00000007 => { :type => 'undefined' },
+  }, "Checking if the five nodes were properly returned")
 
   title("Creating a non-overlapping 32-bit node")
   result = view.new_node('s2', 0x00000004, NODE4[:type], 4, NODE4[:value], { :test => 321, :test2 => '654' }, [0x00000000])
@@ -513,62 +534,74 @@ begin
   assert_equal(result.keys.length, 1, "Verifying that one segment was returned")
   segment = result[:s2]
   assert_type(segment, Hash, "Checking if the segment was formatted properly")
-  assert_equal(segment[:nodes].length(), 2, "Verifying that two nodes were returned (the xref was updated again)")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
+    0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
+  }, "Checking if the nodes were properly returned")
 
   title("Making sure both nodes are in good shape")
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
   assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_equal(segment[:nodes].length, 2, "Verifying that the proper number of nodes were returned")
-  assert_equal(segment[:nodes][0x00000000][:type],  NODE0[:type],  "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000000][:value], NODE0[:value], "Verifying node's value")
-  assert_equal(segment[:nodes][0x00000004][:type],  NODE4[:type],  "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000004][:value], NODE4[:value], "Verifying node's value")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
+    0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
+  }, "Checking if the nodes were properly returned")
 
   title("Creating an overlapping 32-bit node")
   result = view.new_node('s2', 0x00000002, NODE2[:type], 4, NODE2[:value], { :test => 321, :test2 => '654' }, [])
   segment = result[:s2]
-  assert_equal(segment[:nodes].length(), 5, "Verifying the correct number of nodes were returned")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => { :type => 'undefined' },
+    0x00000001 => { :type => 'undefined' },
+    0x00000002 => NODE2,
+    0x00000003 => { :type => 'undefined' },
+    0x00000004 => { :type => 'undefined' },
+  }, "Checking if the nodes were properly returned")
 
   title("Making sure it's still in good shape")
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
   assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_equal(segment[:nodes].length, 5, "Verifying that the proper number of nodes were returned")
-  assert_equal(segment[:nodes][0x00000000][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000001][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000002][:type], NODE2[:type],  "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000002][:value],NODE2[:value], "Verifying node's value")
-  assert_equal(segment[:nodes][0x00000006][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying node's type")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => { :type => 'undefined' },
+    0x00000001 => { :type => 'undefined' },
+    0x00000002 => NODE2,
+    0x00000003 => { :type => 'undefined' },
+    0x00000004 => { :type => 'undefined' },
+  }, "Checking if the nodes were properly returned")
 
   title("Undoing the third node")
   result = view.undo(:with_nodes => true)
   segment = result[:s2]
-  assert_equal(segment[:nodes].length(), 2, "Checking that the right number of nodes were returned")
-  assert_equal(segment[:nodes][0x00000000][:type],  NODE0[:type],  "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000000][:value], NODE0[:value], "Verifying node's value")
-  assert_equal(segment[:nodes][0x00000004][:type],  NODE4[:type],  "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000004][:value], NODE4[:value], "Verifying node's type")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
+    0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
+  }, "Checking if the nodes were properly returned")
 
   title("Undoing the second node")
   result = view.undo(:with_nodes => true)
   segment = result[:s2]
   assert_equal(segment[:nodes].length(), 4, "Checking that the right number of nodes were returned")
-  assert_nil(segment[:nodes][0x00000000], "Checking that the unchanged node wasn't returned")
   assert_equal(segment[:nodes][0x00000004][:type], 'undefined', "Verifying node's type")
   assert_equal(segment[:nodes][0x00000005][:type], 'undefined', "Verifying node's type")
   assert_equal(segment[:nodes][0x00000006][:type], 'undefined', "Verifying node's type")
   assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying node's type")
+  assert_nodes(segment[:nodes], {
+    0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
+    0x00000005 => { :type => 'undefined' },
+    0x00000006 => { :type => 'undefined' },
+    0x00000007 => { :type => 'undefined' },
+  }, "Checking if the nodes were properly returned")
 
   segment = view.get_segment("s2", :with_nodes => true)
-  assert_equal(segment[:nodes].length(), 5, "Checking that the right number of nodes were returned")
-  assert_equal(segment[:nodes][0x00000000][:type],  NODE0[:type],  "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000000][:value], NODE0[:value], "Verifying node's value")
-  assert_equal(segment[:nodes][0x00000004][:type],  'undefined',   "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000005][:type],  'undefined',   "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000006][:type],  'undefined',   "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000007][:type],  'undefined',   "Verifying node's type")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => NODE0,
+    0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
+    0x00000005 => { :type => 'undefined' },
+    0x00000006 => { :type => 'undefined' },
+    0x00000007 => { :type => 'undefined' },
+  }, "Checking if the nodes were properly returned")
 
   title("Undoing the first node")
   result = view.undo(:with_nodes => true)
@@ -578,38 +611,44 @@ begin
   assert_equal(segment[:nodes][0x00000001][:type], 'undefined', "Verifying that the nodes are all undefined")
   assert_equal(segment[:nodes][0x00000002][:type], 'undefined', "Verifying that the nodes are all undefined")
   assert_equal(segment[:nodes][0x00000003][:type], 'undefined', "Verifying that the nodes are all undefined")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => { :type => 'undefined' },
+    0x00000001 => { :type => 'undefined' },
+    0x00000002 => { :type => 'undefined' },
+    0x00000003 => { :type => 'undefined' },
+  }, "Checking if the nodes were properly returned")
 
   segment = view.get_segment("s2", :with_nodes => true)
-  assert_equal(segment[:nodes].length(), 8, "Checking that the right number of nodes were returned")
-  assert_equal(segment[:nodes][0x00000000][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000001][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000002][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000003][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000004][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000005][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000006][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying node's type")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => { :type => 'undefined' },
+    0x00000001 => { :type => 'undefined' },
+    0x00000002 => { :type => 'undefined' },
+    0x00000003 => { :type => 'undefined' },
+    0x00000004 => { :type => 'undefined' },
+    0x00000005 => { :type => 'undefined' },
+    0x00000006 => { :type => 'undefined' },
+    0x00000007 => { :type => 'undefined' },
+  }, "Checking if the nodes were properly returned")
 
-  title("Redo: creating a 32-bit node")
+  title("Redo: creating the first 32-bit node")
   result = view.redo(:with_nodes => true)
   assert_type(result, Hash, "Checking if the new_node function returned properly")
   assert_equal(result.keys.length, 1, "Verifying that only one segment was returned")
   segment = result[:s2]
   assert_type(segment, Hash, "Checking if the segment was formatted properly")
   assert_equal(segment[:nodes].length(), 2, "Verifying that two nodes were returned (the node with the new xref and the original node)")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => NODE0,
+    0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
+  }, "Checking if the nodes were properly returned")
 
   title("Making sure there are exactly 5 nodes present")
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
-  assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_equal(segment[:nodes].length, 5, "Verifying that five nodes were returned")
-  assert_equal(segment[:nodes][0x00000000][:type],  NODE0[:type],  "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000000][:value], NODE0[:value], "Verifying node's value")
-  assert_equal(segment[:nodes][0x00000004][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000005][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000006][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000004][:xrefs][0], 0, "Verifying the new node's cross reference")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => NODE0,
+    0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
+  }, "Checking if the nodes were properly returned")
 
   title("Redo: creating a non-overlapping 32-bit node")
   result = view.redo(:with_data => true)
@@ -618,44 +657,40 @@ begin
   assert_equal(result.keys.length, 1, "Verifying that one segment was returned")
   segment = result[:s2]
   assert_type(segment, Hash, "Checking if the segment was formatted properly")
-  assert_equal(segment[:nodes].length(), 2, "Verifying that two nodes were returned (the xref was updated again)")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
+    0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
+  }, "Checking if the nodes were properly returned")
 
   title("Making sure both nodes are in good shape")
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
-  assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_equal(segment[:nodes].length, 2, "Verifying that the proper number of nodes were returned")
-  assert_equal(segment[:nodes][0x00000000][:type],  NODE0[:type],  "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000000][:value], NODE0[:value], "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000004][:type],  NODE4[:type],  "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000004][:value], NODE4[:value], "Verifying node's type")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
+    0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
+  }, "Checking if the nodes were properly returned")
 
   title("Redo: creating an overlapping 32-bit node")
   result = view.redo(:with_data => true)
   segment = result[:s2]
-  assert_equal(segment[:nodes].length(), 5, "Verifying the correct number of nodes were returned")
+  assert_nodes(segment[:nodes], {
+    0x00000000 => { :type => 'undefined'},
+    0x00000001 => { :type => 'undefined'},
+    0x00000002 => NODE2,
+    0x00000006 => { :type => 'undefined'},
+    0x00000007 => { :type => 'undefined'},
+  }, "Checking if the nodes were properly returned")
 
   title("Making sure it's still in good shape")
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
-  assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_equal(segment[:nodes].length, 5, "Verifying that the proper number of nodes were returned")
-  if(assert_not_nil(segment[:nodes][0x00000000], "Verifying that a node exists at 0x00000000"))
-    assert_equal(segment[:nodes][0x00000000][:type], 'undefined', "Verifying node's type")
-  end
-  if(assert_not_nil(segment[:nodes][0x00000001], "Verifying that a node exists at 0x00000001"))
-    assert_equal(segment[:nodes][0x00000001][:type], 'undefined', "Verifying node's type")
-  end
-  if(assert_not_nil(segment[:nodes][0x00000002], "Verifying that a node exists at 0x00000002"))
-    assert_equal(segment[:nodes][0x00000002][:type],  NODE2[:type],  "Verifying node's type")
-    assert_equal(segment[:nodes][0x00000002][:value], NODE2[:value], "Verifying node's value")
-  end
-  if(assert_not_nil(segment[:nodes][0x00000006], "Verifying that a node exists at 0x00000006"))
-    assert_equal(segment[:nodes][0x00000006][:type], 'undefined', "Verifying node's type")
-  end
-  if(assert_not_nil(segment[:nodes][0x00000007], "Verifying that a node exists at 0x00000007"))
-    assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying node's type")
-  end
+  assert_nodes(segment[:nodes], {
+    0x00000000 => { :type => 'undefined'},
+    0x00000001 => { :type => 'undefined'},
+    0x00000002 => NODE2,
+    0x00000006 => { :type => 'undefined'},
+    0x00000007 => { :type => 'undefined'},
+  }, "Checking if the nodes were properly returned")
 
   # TODO: Create nodes using an array
   # TODO: More Xref stuff
