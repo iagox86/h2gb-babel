@@ -15,42 +15,44 @@ view_id      = nil
 @@pass = 0
 @@fail = 0
 
-def assert(boolean, test, pass = nil, fail = nil, details = nil)
+def assert(boolean, test, pass = nil, fail = nil)
   if(boolean)
     @@pass += 1
 
     puts(" ++ PASSED: #{test} #{pass ? " (#{pass})" : ""}")
+
+    return true
   else
     @@fail += 1
 
     puts(" -- FAILED: #{test} #{fail ? " (#{fail})" : ""}")
-  end
 
-  if(!details.nil?)
-    puts(details)
+    return false
   end
 end
 
-def assert_equal(received, expected, description, details = nil)
-  assert(expected === received, description, "VALUE: #{received}", "EXPECTED: #{expected}, RECEIVED: #{received}", details)
+def assert_equal(received, expected, description)
+  return assert(expected === received, description, "VALUE: #{received}", "EXPECTED: #{expected}, RECEIVED: #{received}")
 end
 
-def assert_nil(value, description, details = nil)
-  assert(value.nil?, description, nil, "EXPECTED: nil, RECEIVED: #{value}", details)
+def assert_nil(value, description)
+  return assert(value.nil?, description, nil, "EXPECTED: nil, RECEIVED: #{value}")
 end
 
-def assert_not_nil(value, description, details = nil)
-  assert(!value.nil?, description, nil, "EXPECTED: (anything), RECEIVED: nil", details)
+def assert_not_nil(value, description)
+  return assert(!value.nil?, description, nil, "EXPECTED: (anything), RECEIVED: nil")
 end
 
 def assert_type(value, expected_class, description)
-  assert(value.is_a?(expected_class), description, nil, "EXPECTED: #{expected_class}, RECEIVED: #{value.class}")
+  return assert(value.is_a?(expected_class), description, nil, "EXPECTED: #{expected_class}, RECEIVED: #{value.class}")
 end
 
 @@revision = 0
 def assert_revision(value, description)
-  assert(value >= @@revision, description, nil, "EXPECTED: at least #{@@revision}, RECEIVED: #{value}")
+  result = assert(value >= @@revision, description, nil, "EXPECTED: at least #{@@revision}, RECEIVED: #{value}")
   @@revision = value
+
+  return result
 end
 
 def print_stats()
@@ -183,7 +185,7 @@ begin
   good = false
   assert_equal(all_workspaces.o[:workspaces].length(), 1, "Making sure the new binary only has one workspace")
   assert_equal(all_workspaces.o[:workspaces][0][:workspace_id], workspace_id, "Making sure the id of the retrieved workspace is right")
-  assert_equal(all_workspaces.o[:workspaces][0][:binary_id], binary_id, "Making sure the workspace belongs to the correct binary", all_workspaces.o[:workspaces][0])
+  assert_equal(all_workspaces.o[:workspaces][0][:binary_id], binary_id, "Making sure the workspace belongs to the correct binary")
 
   title("Finding the workspace")
   new_workspace = Workspace.find(workspace_id)
@@ -238,7 +240,7 @@ begin
   good = false
   assert_equal(all_views.o[:views].length(), 1, "Making sure the new workspace only has one view")
   assert_equal(all_views.o[:views][0][:view_id], view_id, "Making sure the id of the retrieved view is right")
-  assert_equal(all_views.o[:views][0][:workspace_id], workspace_id, "Making sure the view belongs to the correct workspace", all_views.o[:views][0])
+  assert_equal(all_views.o[:views][0][:workspace_id], workspace_id, "Making sure the view belongs to the correct workspace")
   assert_equal(all_views.o[:views][0][:revision], 1, "The revision hasn't changed")
 
   title("Finding the view")
@@ -614,11 +616,21 @@ begin
   assert_type(segment, Hash, "Checking if the segment was returned")
   assert_type(segment[:nodes], Hash, "Checking if nodes are present")
   assert_equal(segment[:nodes].length, 5, "Verifying that the proper number of nodes were returned")
-  assert_equal(segment[:nodes][0x00000000][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000001][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000002][:type], 'dword',     "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000006][:type], 'undefined', "Verifying node's type")
-  assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying node's type")
+  if(assert_not_nil(segment[:nodes][0x00000000], "Verifying that a node exists at 0x00000000"))
+    assert_equal(segment[:nodes][0x00000000][:type], 'undefined', "Verifying node's type")
+  end
+  if(assert_not_nil(segment[:nodes][0x00000001], "Verifying that a node exists at 0x00000001"))
+    assert_equal(segment[:nodes][0x00000001][:type], 'undefined', "Verifying node's type")
+  end
+  if(assert_not_nil(segment[:nodes][0x00000002], "Verifying that a node exists at 0x00000002"))
+    assert_equal(segment[:nodes][0x00000002][:type], 'dword', "Verifying node's type")
+  end
+  if(assert_not_nil(segment[:nodes][0x00000006], "Verifying that a node exists at 0x00000006"))
+    assert_equal(segment[:nodes][0x00000006][:type], 'undefined', "Verifying node's type")
+  end
+  if(assert_not_nil(segment[:nodes][0x00000007], "Verifying that a node exists at 0x00000007"))
+    assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying node's type")
+  end
 
   # TODO: Create nodes using an array
   # TODO: More Xref stuff
