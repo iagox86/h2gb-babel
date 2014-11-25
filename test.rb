@@ -603,7 +603,7 @@ begin
   assert_not_nil(segments[:deleteme], "The new segment is still present")
 
   title("Attempting another undo, which should delete the new segment")
-  view.redo()
+  view.undo()
   segments = view.get_segments()
   assert_equal(segments.length, 1, "Making sure there are still 2 segments")
   assert_not_nil(segments[:s1], "The first segment is still present")
