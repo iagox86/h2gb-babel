@@ -775,8 +775,8 @@ begin
     0x00000000 => { :type => 'undefined' },
     0x00000001 => { :type => 'undefined' },
     0x00000002 => NODE2,
-    0x00000003 => { :type => 'undefined' },
-    0x00000004 => { :type => 'undefined' },
+    0x00000006 => { :type => 'undefined' },
+    0x00000007 => { :type => 'undefined' },
   }, "Checking if the nodes were properly returned")
 
   title("Undoing the third node")
