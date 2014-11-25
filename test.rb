@@ -814,7 +814,7 @@ begin
   title("Undoing the first node")
   result = view.undo(:with_nodes => true)
   segment = result[:s2]
-  assert_equal(segment[:nodes].length(), 4, "Checking that the right number of nodes were returned")
+  assert_equal(segment[:nodes].length(), 5, "Checking that the right number of nodes were returned")
   assert_equal(segment[:nodes][0x00000000][:type], 'undefined', "Verifying that the nodes are all undefined")
   assert_equal(segment[:nodes][0x00000001][:type], 'undefined', "Verifying that the nodes are all undefined")
   assert_equal(segment[:nodes][0x00000002][:type], 'undefined', "Verifying that the nodes are all undefined")
@@ -824,6 +824,7 @@ begin
     0x00000001 => { :type => 'undefined' },
     0x00000002 => { :type => 'undefined' },
     0x00000003 => { :type => 'undefined' },
+    0x00000004 => { :type => 'undefined' },
   }, "Checking if the nodes were properly returned")
 
   segment = view.get_segment("s2", :with_nodes => true)
