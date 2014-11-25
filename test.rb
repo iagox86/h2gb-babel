@@ -716,7 +716,7 @@ begin
   assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying that the nodes are all undefined")
 
   title("Creating a 32-bit node")
-  result = view.new_node('s2', 0x00000000, NODE0[:type], 4, NODE4[:value], { :test => '123', :test2 => 456 }, [0x00000004])
+  result = view.new_node('s2', 0x00000000, NODE0[:type], 4, NODE0[:value], { :test => '123', :test2 => 456 }, [0x00000004])
   assert_type(result, Hash, "Checking if the new_node function returned properly")
   assert_equal(result.keys.length, 1, "Verifying that only one segment was returned")
   segment = result[:s2]
