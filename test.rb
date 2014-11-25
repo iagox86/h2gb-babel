@@ -55,30 +55,6 @@ def assert_revision(value, description)
   return result
 end
 
-def assert_node(received, expected, description)
-  expected.each_key do |k|
-    assert_equal(received[k], expected[k], "Checking field #{k} (#{description})")
-  end
-end
-
-def assert_nodes(received, expected, description)
-  title("Checking nodes: #{description}")
-  if(!assert_not_nil(received, "Making sure nodes exist: #{description}"))
-    return
-  end
-
-  assert_equal(received.keys.length, expected.keys.length, "Verifying that the right number of nodes are returned")
-
-  expected.each_key do |address|
-    e = expected[address]
-    r = received[address]
-
-    if(assert_not_nil(received[address], "Checking if the node at address 0x%08x exists" % address))
-      assert_node(r, e, "Checking node at address 0x%08x" % address)
-    end
-  end
-end
-
 def assert_array(received, expected, description)
   if(assert_type(received, Array, "#{description}: verifying it's an Array"))
     if(assert_equal(received.length(), expected.length(), "#{description}: Checking array length"))
@@ -751,7 +727,7 @@ begin
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
   assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => NODE0,
     0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
     0x00000005 => { :type => 'undefined' },
@@ -766,7 +742,7 @@ begin
   assert_equal(result.keys.length, 1, "Verifying that one segment was returned")
   segment = result[:s2]
   assert_type(segment, Hash, "Checking if the segment was formatted properly")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
     0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
   }, "Checking if the nodes were properly returned")
@@ -775,7 +751,7 @@ begin
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
   assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
     0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
   }, "Checking if the nodes were properly returned")
@@ -783,7 +759,7 @@ begin
   title("Creating an overlapping 32-bit node")
   result = view.new_node('s2', 0x00000002, NODE2[:type], 4, NODE2[:value], { :test => 321, :test2 => '654' }, [])
   segment = result[:s2]
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => { :type => 'undefined' },
     0x00000001 => { :type => 'undefined' },
     0x00000002 => NODE2,
@@ -795,7 +771,7 @@ begin
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
   assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => { :type => 'undefined' },
     0x00000001 => { :type => 'undefined' },
     0x00000002 => NODE2,
@@ -806,7 +782,7 @@ begin
   title("Undoing the third node")
   result = view.undo(:with_nodes => true)
   segment = result[:s2]
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
     0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
   }, "Checking if the nodes were properly returned")
@@ -819,7 +795,7 @@ begin
   assert_equal(segment[:nodes][0x00000005][:type], 'undefined', "Verifying node's type")
   assert_equal(segment[:nodes][0x00000006][:type], 'undefined', "Verifying node's type")
   assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying node's type")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
     0x00000005 => { :type => 'undefined' },
     0x00000006 => { :type => 'undefined' },
@@ -827,7 +803,7 @@ begin
   }, "Checking if the nodes were properly returned")
 
   segment = view.get_segment("s2", :with_nodes => true)
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => NODE0,
     0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
     0x00000005 => { :type => 'undefined' },
@@ -843,7 +819,7 @@ begin
   assert_equal(segment[:nodes][0x00000001][:type], 'undefined', "Verifying that the nodes are all undefined")
   assert_equal(segment[:nodes][0x00000002][:type], 'undefined', "Verifying that the nodes are all undefined")
   assert_equal(segment[:nodes][0x00000003][:type], 'undefined', "Verifying that the nodes are all undefined")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => { :type => 'undefined' },
     0x00000001 => { :type => 'undefined' },
     0x00000002 => { :type => 'undefined' },
@@ -851,7 +827,7 @@ begin
   }, "Checking if the nodes were properly returned")
 
   segment = view.get_segment("s2", :with_nodes => true)
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => { :type => 'undefined' },
     0x00000001 => { :type => 'undefined' },
     0x00000002 => { :type => 'undefined' },
@@ -869,7 +845,7 @@ begin
   segment = result[:s2]
   assert_type(segment, Hash, "Checking if the segment was formatted properly")
   assert_equal(segment[:nodes].length(), 2, "Verifying that two nodes were returned (the node with the new xref and the original node)")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => NODE0,
     0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
   }, "Checking if the nodes were properly returned")
@@ -877,7 +853,7 @@ begin
   title("Making sure there are exactly 5 nodes present")
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => NODE0,
     0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
   }, "Checking if the nodes were properly returned")
@@ -889,7 +865,7 @@ begin
   assert_equal(result.keys.length, 1, "Verifying that one segment was returned")
   segment = result[:s2]
   assert_type(segment, Hash, "Checking if the segment was formatted properly")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
     0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
   }, "Checking if the nodes were properly returned")
@@ -897,7 +873,7 @@ begin
   title("Making sure both nodes are in good shape")
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
     0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
   }, "Checking if the nodes were properly returned")
@@ -905,7 +881,7 @@ begin
   title("Redo: creating an overlapping 32-bit node")
   result = view.redo(:with_data => true)
   segment = result[:s2]
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => { :type => 'undefined'},
     0x00000001 => { :type => 'undefined'},
     0x00000002 => NODE2,
@@ -916,7 +892,7 @@ begin
   title("Making sure it's still in good shape")
   segment = view.get_segment("s2", :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
-  assert_nodes(segment[:nodes], {
+  assert_hash(segment[:nodes], {
     0x00000000 => { :type => 'undefined'},
     0x00000001 => { :type => 'undefined'},
     0x00000002 => NODE2,
