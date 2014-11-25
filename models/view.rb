@@ -131,12 +131,17 @@ class View < Model
     return result
   end
 
-
   def delete_node(name)
     return post_stuff("/views/:view_id/delete_segment", {
       :view_id => self.o[:view_id],
       :segment => name,
     }).o
+  end
+
+  def get_undo_log(params = {})
+    return get_stuff("/views/:view_id/debug/undo_log", {
+      :view_id => self.o[:view_id]
+    }.merge(params)).o
   end
 
   def print()

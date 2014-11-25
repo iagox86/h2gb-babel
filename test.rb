@@ -79,6 +79,39 @@ def assert_nodes(received, expected, description)
   end
 end
 
+def assert_array(received, expected, description)
+  if(assert_type(received, Array, "#{description}: verifying it's an Array"))
+    if(assert_equal(received.length(), expected.length(), "#{description}: Checking array length"))
+      0.upto(expected.length() - 1) do |i|
+        r = received[i]
+        e = expected[i]
+
+        if(e.is_a?(Array))
+          assert_array(r, e, "#{description}[#{i}]")
+        elsif(e.is_a?(Hash))
+          assert_hash(r, e, "#{description}[#{i}]")
+        else
+          assert_equal(r, e, "#{description}[#{i}]")
+        end
+      end
+    end
+  end
+end
+
+def assert_hash(received, expected, description)
+  if(assert_type(received, Hash, "#{description}: verifying it's a Hash"))
+    expected.each_key do |k|
+      if(expected[k].is_a?(Hash))
+        assert_hash(received[k], expected[k], "#{description}[#{k}]")
+      elsif(expected[k].is_a?(Array))
+        assert_array(received[k], expected[k], "#{description}[#{k}]")
+      else
+        assert_equal(received[k], expected[k], "#{description}[#{k}]")
+      end
+    end
+  end
+end
+
 def print_stats()
   total = @@pass + @@fail
 
@@ -324,6 +357,22 @@ begin
   assert_nil(segment[:nodes], "Segment isn't returning any nodes")
   assert_nil(segment[:data], "Segment isn't returning any data")
 
+  title("Verifying the undo log")
+  assert_hash(view.get_undo_log, {
+    :undo => [
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 's1' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 's1' },
+      },
+    ],
+    :redo => [
+    ],
+  }, "Checking the undo/redo logs after creating the new segment")
+
   title("Find segments (w/ default)")
   segments = view.get_segments("s1")
   assert_type(segments, Hash, "The segment was found")
@@ -393,6 +442,30 @@ begin
   view.delete_segment("s1")
   assert_equal(view.get_segments().length(), 0, "Checking if the segment was deleted")
 
+  title("Verifying the undo log")
+  assert_hash(view.get_undo_log, {
+    :undo => [
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 's1' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 's1' },
+      },
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'delete_segments', :params => 's1' },
+        :backward => { :type => 'method', :method => 'create_segments', :params => { :name => 's1' } },
+      },
+    ],
+    :redo => [
+    ],
+  }, "Checking the undo/redo logs after creating the new segment")
+
   title("Testing undo (should restore the deleted segment)")
   segments = view.undo(:with_data => true, :with_nodes => true)
   assert_equal(segments.length(), 1, "Checking if the segment was restored")
@@ -405,6 +478,31 @@ begin
   assert_type(segment[:data], String, "Data is returned as a string")
   assert_equal(segment[:data], "AAAAAAAA", "Checking the data returned")
   assert_type(segment[:nodes], Hash, "Nodes are returned as a hash")
+
+  title("Verifying the undo log")
+  #pp view.get_undo_log
+  assert_hash(view.get_undo_log, {
+    :undo => [
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 's1' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 's1' },
+      },
+    ],
+    :redo => [
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type      => 'method',
+        :forward   => { :type => 'method', :method => 'delete_segments', :params => 's1' },
+        :backward  => { :type => 'method', :method => 'create_segments', :params => { :name => 's1' } },
+      },
+    ],
+  }, "Checking the undo/redo logs after creating the new segment")
 
   title("Double-checking undo")
   segments = view.get_segments("s1", :with_data => true, :with_nodes => true)
