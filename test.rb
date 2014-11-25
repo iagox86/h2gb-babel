@@ -595,12 +595,56 @@ begin
   segments = view.get_segments()
   assert_equal(segments.length, 2, "Making sure there are now 2 segments")
 
+  assert_hash(view.get_undo_log, {
+    :undo => [
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 's1' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 's1' },
+      },
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 'deleteme' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 'deleteme' },
+      },
+    ],
+    :redo => [ ],
+  }, "Checking the undo/redo logs after killing the redo buffer")
+
   title("Attempting a redo, which should fail")
   view.redo()
   segments = view.get_segments()
   assert_equal(segments.length, 2, "Making sure there are still 2 segments")
   assert_not_nil(segments[:s1], "The first segment is still present")
   assert_not_nil(segments[:deleteme], "The new segment is still present")
+
+  assert_hash(view.get_undo_log, {
+    :undo => [
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 's1' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 's1' },
+      },
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 'deleteme' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 'deleteme' },
+      },
+    ],
+    :redo => [ ],
+  }, "Checking the undo/redo logs after killing the redo buffer")
 
   title("Attempting another undo, which should delete the new segment")
   view.undo()
@@ -609,12 +653,58 @@ begin
   assert_not_nil(segments[:s1], "The first segment is still present")
   assert_nil(segments[:deleteme], "The new segment is gone")
 
+  assert_hash(view.get_undo_log, {
+    :undo => [
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 's1' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 's1' },
+      },
+    ],
+    :redo => [
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 'deleteme' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 'deleteme' },
+      },
+    ],
+  }, "Checking the undo/redo logs after undoing the new segment")
+
   title("Attempting a redo, which should restore the new segment")
   view.redo()
   segments = view.get_segments()
   assert_equal(segments.length, 2, "Making sure there are still 2 segments")
   assert_not_nil(segments[:s1], "The first segment is still present")
   assert_not_nil(segments[:deleteme], "The new segment is back")
+
+  assert_hash(view.get_undo_log, {
+    :undo => [
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 's1' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 's1' },
+      },
+      {
+        :type => 'checkpoint'
+      },
+      {
+        :type     => 'method',
+        :forward  => { :type => 'method', :method => 'create_segments', :params => { :name => 'deleteme' } },
+        :backward => { :type => 'method', :method => 'delete_segments', :params => 'deleteme' },
+      },
+    ],
+    :redo => [
+    ],
+  }, "Checking the undo/redo logs after re-doing the new segment")
 
   title("Attempting another undo, which should delete the new segment *AGAIN*")
   view.undo()
