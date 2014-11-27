@@ -74,7 +74,7 @@ class View < Model
   def new_segment(name, address, file_address, data, params = {})
     return post_stuff("/views/:view_id/new_segments", {
       :view_id      => self.o[:view_id],
-      :segments => [{
+      :segments     => [{
         :name         => name,
         :address      => address,
         :file_address => file_address,
@@ -83,7 +83,17 @@ class View < Model
     }.merge(params)).o[:segments]
   end
 
-  # name can be a string or an array
+  def new_segments(segments, params)
+    segments = segments.map do |segment|
+      segment[:data] = Base64.encode64(segment[:data])
+    end
+
+    return post_stuff("/views/:view_id/new_segments", {
+      :view_id      => self.o[:view_id],
+      :segments     => segments
+    }.merge(params)).o[:segments]
+  end
+
   def delete_segment(name)
     return post_stuff("/views/:view_id/delete_segments", {
       :view_id  => self.o[:view_id],
@@ -91,7 +101,14 @@ class View < Model
     }).o[:segments]
   end
 
-  def new_node(segment, address, type, length, value, details, references)
+  def delete_segments(names)
+    return post_stuff("/views/:view_id/delete_segments", {
+      :view_id  => self.o[:view_id],
+      :segments => names,
+    }).o[:segments]
+  end
+
+  def new_node(segment, address, type, length, value, details, references, params = {})
     return post_stuff("/views/:view_id/new_nodes", { 
       :view_id => self.o[:view_id],
       :segment => segment,
@@ -102,7 +119,15 @@ class View < Model
         :value   => value,
         :details => details,
         :refs    => references,
-    }]}).o[:segments]
+    }]}.merge(params)).o[:segments]
+  end
+
+  def new_nodes(segment, nodes, params)
+    return post_stuff("/views/:view_id/new_nodes", { 
+      :view_id => self.o[:view_id],
+      :segment => segment,
+      :nodes => nodes
+    }.merge(params)).o[:segments]
   end
 
   def delete_node(name)
@@ -112,6 +137,12 @@ class View < Model
     }).o
   end
 
+  def delete_nodes(names)
+    return post_stuff("/views/:view_id/delete_nodes", {
+      :view_id => self.o[:view_id],
+      :segment => names,
+    }).o
+  end
 
   def get_segments(names = nil, params = {})
     return get_stuff("/views/:view_id/segments", {
