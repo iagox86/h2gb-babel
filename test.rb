@@ -932,7 +932,7 @@ begin
   result = view.undo()
 
   title("Creating nodes using an array")
-  segment = view.new_segment('A', 0x1000, 0x0000, "A" * 16)
+  segment = view.new_segment('A', 0x1000, 0x0000, "1111222233334444")
   result = view.new_nodes('A', [
     {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :refs => []},
     {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :refs => []},
@@ -964,13 +964,13 @@ begin
   # Get all nodes to make sure it's sane
   assert_hash(view.get_segment('A', :with_nodes => true), { :nodes =>
     {
-      0x1000 => {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :refs => []},
-      0x1004 => {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :refs => []},
+      0x1000 => {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :raw => '1111', :refs => []},
+      0x1004 => {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :raw => '2222', :refs => []},
       0x1008 => {:address => 0x1008, :type => 'undefined', :length => 1},
       0x1009 => {:address => 0x1009, :type => 'undefined', :length => 1},
       0x100a => {:address => 0x100a, :type => 'undefined', :length => 1},
       0x100b => {:address => 0x100b, :type => 'undefined', :length => 1},
-      0x100c => {:address => 0x100c, :type => 'defined', :length => 4, :value => 'DDDD', :refs => []},
+      0x100c => {:address => 0x100c, :type => 'defined', :length => 4, :value => 'DDDD', :raw => '4444', :refs => []},
     }
   }, 'delete_nodes_again')
 
