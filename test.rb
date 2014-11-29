@@ -909,6 +909,7 @@ begin
 
   result = view.undo()
 
+  # Go back to a clean slate
   title("Creating 4 segments at once, and requesting data + nodes")
   result = view.new_segments({
     'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, },
@@ -916,7 +917,7 @@ begin
     'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, },
     'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, },
   }, :with_data => true, :with_nodes => true)
-  pp result
+
   assert_equal(result.length, 4, "Checking that the right number of segments were returned")
   assert_hash(result, {
     'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, :nodes => { 0  => {:type => 'undefined'}}, },
@@ -924,6 +925,31 @@ begin
     'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, :nodes => { 32 => {:type => 'undefined'}}, },
     'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, :nodes => { 48 => {:type => 'undefined'}}, },
   }, "Checking that the segments were created")
+
+  # Go back to a clean slate
+  result = view.undo()
+
+  title("Creating nodes using an array")
+  segment = view.new_segment('A', 0x1000, 0x0000, "A" * 16)
+  result = view.new_nodes('A', [
+    {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :default => {}, :refs => []},
+    {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :default => {}, :refs => []},
+    {:address => 0x1008, :type => 'defined', :length => 4, :value => 'CCCC', :default => {}, :refs => []},
+    {:address => 0x100c, :type => 'defined', :length => 4, :value => 'DDDD', :default => {}, :refs => []},
+  ])
+  assert_hash(result, { 'A' => {
+    :address => 0x1000,
+    :nodes => {
+      0x1000 => {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :default => {}, :refs => []},
+      0x1004 => {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :default => {}, :refs => []},
+      0x1008 => {:address => 0x1008, :type => 'defined', :length => 4, :value => 'CCCC', :default => {}, :refs => []},
+      0x100c => {:address => 0x100c, :type => 'defined', :length => 4, :value => 'DDDD', :default => {}, :refs => []},
+    }
+  }}, "new_nodes")
+
+  # Delete a node
+#  result = view.delete_node('A', [0x1008])
+#  pp result
 
   # TODO: Create nodes using an array
   # TODO: Segments that don't start at address 0

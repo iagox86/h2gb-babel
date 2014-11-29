@@ -151,7 +151,7 @@ class View < Model
     }]}.merge(params)).o[:segments]
   end
 
-  def new_nodes(segment, nodes, params)
+  def new_nodes(segment, nodes, params = {})
     return post_stuff("/views/:view_id/new_nodes", { 
       :view_id => self.o[:view_id],
       :segment => segment,
