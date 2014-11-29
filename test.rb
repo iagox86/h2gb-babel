@@ -786,7 +786,7 @@ begin
   segment = result['s2']
   assert_equal(segment[:nodes].length(), 5, "Checking that the right number of nodes were returned")
   assert_hash(segment[:nodes], {
-    0x00000000 => NODE0.merge({:xrefs => nil}),
+    0x00000000 => NODE0.merge({:xrefs => []}),
     0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
     0x00000005 => { :type => 'undefined' },
     0x00000006 => { :type => 'undefined' },
@@ -951,7 +951,7 @@ begin
 
   # Delete a node
   result = view.delete_nodes('A', [0x1008])
-  assert_hash(result[:segments], { 'A' => {
+  assert_hash(result, { 'A' => {
     :address => 0x1000,
     :nodes => {
       0x1008 => {:address => 0x1008, :type => 'undefined', :length => 1},
@@ -974,11 +974,149 @@ begin
     }
   }, 'delete_nodes_again')
 
-  # TODO: Create nodes using an array
-  # TODO: Segments that don't start at address 0
-  # TODO: More Xref stuff
+  title("Testing cross-references")
+  segment = view.new_segment('X', 0x0, 0x0, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+  result = view.new_nodes('X', [
+    {:address => 0,  :type => 'defined', :length => 4, :value => 'References 4 and 8',      :refs => [4, 8]},
+    {:address => 4,  :type => 'defined', :length => 4, :value => 'References 0 and itself', :refs => [0, 4]},
+    {:address => 8,  :type => 'defined', :length => 4, :value => 'References all others',   :refs => [0, 4, 8, 12]},
+    {:address => 12, :type => 'defined', :length => 4, :value => 'References 0 and 16',     :refs => [0, 16]},
+  ])
+
+  assert_equal(result['X'][:nodes].length, 5, "xrefs1_length")
+  assert_hash(result['X'][:nodes], {
+    0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 8, 12]},
+    4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [0, 4, 8]},
+    8  => {:type => 'defined',   :refs => [0, 4, 8, 12],  :xrefs => [0, 8]},
+    12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [8]},
+    16 => {:type => 'undefined', :refs => nil,            :xrefs => [12]},
+  }, "xrefs1")
+
+  title("Creating a new node with xrefs")
+  result = view.new_nodes('X', [
+    {:address => 0x0010, :type => 'defined', :length => 4, :value => 'References 0 and 12', :refs => [0, 12]},
+  ])
+  assert_equal(result['X'][:nodes].length, 3, "xrefs2_length")
+  assert_hash(result['X'][:nodes], {
+    0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 8, 12, 16]},
+    12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [8, 16]},
+    16 => {:type => 'defined',   :refs => [0, 12],        :xrefs => [12]},
+  }, "xrefs2")
+
+  title("Deleting a node")
+  result = view.delete_nodes('X', [0x0008])
+  assert_equal(result['X'][:nodes].length, 7, "xrefs3_length")
+  assert_hash(result['X'][:nodes], {
+    0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 12, 16]},
+    4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [0, 4]},
+    8  => {:type => 'undefined', :refs => nil,            :xrefs => [0]},
+    9  => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    10 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    11 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [16]},
+  }, "xrefs3")
+
+  title("Deleting another node")
+  result = view.delete_nodes('X', [16])
+  assert_equal(result['X'][:nodes].length, 6, "xrefs4_length")
+  assert_hash(result['X'][:nodes], {
+    0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 12]},
+    12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => []},
+    16 => {:type => 'undefined', :refs => nil,            :xrefs => [12]},
+    17 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    18 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    19 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+  }, "xrefs4")
+
+  title("Undoing the delete")
+  result = view.undo()
+  assert_equal(result['X'][:nodes].length, 3, "xrefs5_length")
+  assert_hash(result['X'][:nodes], {
+    0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 12, 16]},
+    12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [16]},
+    16 => {:type => 'defined',   :refs => [0, 12],        :xrefs => [12]},
+  }, "xrefs5")
+
+  title("Re-doing the delete")
+  result = view.redo()
+  assert_equal(result['X'][:nodes].length, 6, "xrefs6_length")
+  assert_hash(result['X'][:nodes], {
+    0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 12]},
+    12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => []},
+    16 => {:type => 'undefined', :refs => nil,            :xrefs => [12]},
+    17 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    18 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    19 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+  }, "xrefs6")
+
+  title("Creating another xrefs node that has xrefs on uneven boundaries")
+  result = view.new_nodes('X', [
+    {:address => 20, :type => 'defined', :length => 4, :value => 'References 2, 4, 10, and 12', :refs => [2, 4, 10, 12]},
+  ])
+  assert_equal(result['X'][:nodes].length, 5, "xrefs7_length")
+  assert_hash(result['X'][:nodes], {
+    0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 12, 20]},
+    4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [0, 4, 20]},
+    10 => {:type => 'undefined', :refs => nil,            :xrefs => [20]},
+    12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [20]},
+    20 => {:type => 'defined',   :refs => [2, 4, 10, 12], :xrefs => []},
+  }, "xrefs7")
+
+  title("Deleting a node that has a xref in the middle")
+  result = view.delete_nodes('X', [0x0000])
+  assert_equal(result['X'][:nodes].length, 6, "xrefs8_length")
+  assert_hash(result['X'][:nodes], {
+    0  => {:type => 'undefined', :refs => nil,            :xrefs => [4, 12]},
+    1  => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    2  => {:type => 'undefined', :refs => nil,            :xrefs => [20]},
+    3  => {:type => 'undefined', :refs => nil,            :xrefs => []},
+
+    4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [4, 20]},
+    8  => {:type => 'undefined', :refs => nil,            :xrefs => []},
+  }, "xrefs8")
+
+  title("Re-creating a node that covers a now-undefined node")
+  result = view.new_nodes('X', [
+    {:address => 8, :type => 'defined', :length => 4, :value => 'References 0, 4, 8, and 12', :refs => [0, 4, 8, 12]},
+  ])
+  assert_equal(result['X'][:nodes].length, 4, "xrefs9_length")
+  assert_hash(result['X'][:nodes], {
+    0  => {:type => 'undefined', :refs => nil,            :xrefs => [4, 8, 12]},
+    4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [4, 8, 20]},
+    8  => {:type => 'defined',   :refs => [0, 4, 8, 12],  :xrefs => [8, 20]},
+    12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [8, 20]},
+  }, "xrefs9")
+
+  title("Deleting the segment")
+  result = view.delete_segment('X')
+  assert_equal(result, {}, "Checking if the segment was deleted")
+
+  title("Undoing segment delete")
+  result = view.undo()
+  assert_equal(result['X'][:nodes].length, 14, "xrefs10")
+  assert_hash(result['X'][:nodes], {
+    0  => {:type => 'undefined', :refs => nil,            :xrefs => [4, 8, 12]},
+    1  => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    2  => {:type => 'undefined', :refs => nil,            :xrefs => [20]},
+    3  => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [4, 8, 20]},
+    8  => {:type => 'defined',   :refs => [0, 4, 8, 12],  :xrefs => [8, 20]},
+    12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [8, 20]},
+    16 => {:type => 'undefined', :refs => nil,            :xrefs => [12]},
+    17 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    18 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    19 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    20 => {:type => 'defined',   :refs => [2, 4, 10, 12], :xrefs => []},
+    24 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+    25 => {:type => 'undefined', :refs => nil,            :xrefs => []},
+  }, "xrefs10")
+
+  title("Re-doing segment delete")
+  result = view.redo()
+  assert_equal(result, {}, "Checking if the segment was deleted")
+
   # TODO: Locking the revision and making sure the right stuff shows up
-  # TODO: Apparently I'm not testing the case when 'undo' creates a new segment
 
   puts("ALL DONE! EVERYTHING IS GOOD!!!")
 rescue Exception => e

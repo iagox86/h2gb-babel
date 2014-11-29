@@ -168,7 +168,7 @@ class View < Model
       :view_id => self.o[:view_id],
       :segment => segment,
       :addresses => addresses,
-    }).o
+    }).o[:segments]
   end
 
   def get_segments(names = nil, params = {})
