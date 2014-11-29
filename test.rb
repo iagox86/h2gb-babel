@@ -934,29 +934,45 @@ begin
   title("Creating nodes using an array")
   segment = view.new_segment('A', 0x1000, 0x0000, "A" * 16)
   result = view.new_nodes('A', [
-    {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :default => {}, :refs => []},
-    {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :default => {}, :refs => []},
-    {:address => 0x1008, :type => 'defined', :length => 4, :value => 'CCCC', :default => {}, :refs => []},
-    {:address => 0x100c, :type => 'defined', :length => 4, :value => 'DDDD', :default => {}, :refs => []},
+    {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :refs => []},
+    {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :refs => []},
+    {:address => 0x1008, :type => 'defined', :length => 4, :value => 'CCCC', :refs => []},
+    {:address => 0x100c, :type => 'defined', :length => 4, :value => 'DDDD', :refs => []},
   ])
   assert_hash(result, { 'A' => {
     :address => 0x1000,
     :nodes => {
-      0x1000 => {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :default => {}, :refs => []},
-      0x1004 => {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :default => {}, :refs => []},
-      0x1008 => {:address => 0x1008, :type => 'defined', :length => 4, :value => 'CCCC', :default => {}, :refs => []},
-      0x100c => {:address => 0x100c, :type => 'defined', :length => 4, :value => 'DDDD', :default => {}, :refs => []},
+      0x1000 => {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :refs => []},
+      0x1004 => {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :refs => []},
+      0x1008 => {:address => 0x1008, :type => 'defined', :length => 4, :value => 'CCCC', :refs => []},
+      0x100c => {:address => 0x100c, :type => 'defined', :length => 4, :value => 'DDDD', :refs => []},
     }
   }}, "new_nodes")
 
   # Delete a node
-#  result = view.delete_nodes('A', [0x1008])
-#  puts("Direct result:")
-#  pp result
-#
-#  puts()
-#  puts("Everything:")
-#  pp(view.get_segment('A', :with_nodes => true))
+  result = view.delete_nodes('A', [0x1008])
+  assert_hash(result[:segments], { 'A' => {
+    :address => 0x1000,
+    :nodes => {
+      0x1008 => {:address => 0x1008, :type => 'undefined', :length => 1},
+      0x1009 => {:address => 0x1009, :type => 'undefined', :length => 1},
+      0x100a => {:address => 0x100a, :type => 'undefined', :length => 1},
+      0x100b => {:address => 0x100b, :type => 'undefined', :length => 1},
+    }
+  }}, 'deleted_nodes')
+
+  # Get all nodes to make sure it's sane
+  assert_hash(view.get_segment('A', :with_nodes => true), { :nodes =>
+    {
+      0x1000 => {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :refs => []},
+      0x1004 => {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :refs => []},
+      0x1008 => {:address => 0x1008, :type => 'undefined', :length => 1},
+      0x1009 => {:address => 0x1009, :type => 'undefined', :length => 1},
+      0x100a => {:address => 0x100a, :type => 'undefined', :length => 1},
+      0x100b => {:address => 0x100b, :type => 'undefined', :length => 1},
+      0x100c => {:address => 0x100c, :type => 'defined', :length => 4, :value => 'DDDD', :refs => []},
+    }
+  }, 'delete_nodes_again')
 
   # TODO: Create nodes using an array
   # TODO: Segments that don't start at address 0
