@@ -892,16 +892,41 @@ begin
     0x00000007 => { :type => 'undefined'},
   }, "Checking if the nodes were properly returned")
 
-  segments = {
+  title("Creating 4 segments at once")
+  result = view.new_segments({
     'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, },
     'B' => { :address => 16, :file_address => 1, :data => 'B' * 16, },
     'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, },
     'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, },
-  }
-  result = view.new_segments(segments)
-  #assert_hash(result, segments, "Checking that creating multiple segments returns a hash")
+  })
+  assert_equal(result.length, 4, "Checking that the right number of segments were returned")
+  assert_hash(result, {
+    'A' => { :address => 0,  :file_address => 0 },
+    'B' => { :address => 16, :file_address => 1 },
+    'C' => { :address => 32, :file_address => 2 },
+    'D' => { :address => 48, :file_address => 3 },
+  }, "Checking that the segments were created")
+
+  result = view.undo()
+
+  title("Creating 4 segments at once, and requesting data + nodes")
+  result = view.new_segments({
+    'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, },
+    'B' => { :address => 16, :file_address => 1, :data => 'B' * 16, },
+    'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, },
+    'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, },
+  }, :with_data => true, :with_nodes => true)
+  pp result
+  assert_equal(result.length, 4, "Checking that the right number of segments were returned")
+  assert_hash(result, {
+    'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, :nodes => { 0  => {:type => 'undefined'}}, },
+    'B' => { :address => 16, :file_address => 1, :data => 'B' * 16, :nodes => { 16 => {:type => 'undefined'}}, },
+    'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, :nodes => { 32 => {:type => 'undefined'}}, },
+    'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, :nodes => { 48 => {:type => 'undefined'}}, },
+  }, "Checking that the segments were created")
 
   # TODO: Create nodes using an array
+  # TODO: Segments that don't start at address 0
   # TODO: More Xref stuff
   # TODO: Locking the revision and making sure the right stuff shows up
   # TODO: Apparently I'm not testing the case when 'undo' creates a new segment
