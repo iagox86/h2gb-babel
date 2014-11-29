@@ -72,19 +72,22 @@ class View < Model
   end
 
   def new_segment(name, address, file_address, data, params = {})
-    return post_stuff("/views/:view_id/new_segments", {
+    result = post_stuff("/views/:view_id/new_segments", {
       :view_id      => self.o[:view_id],
-      :segments     => [{
-        :name         => name,
+      :segments     => {name => {
         :address      => address,
         :file_address => file_address,
         :data         => Base64.encode64(data),
-      }]
-    }.merge(params)).o[:segments]
+      }}
+    }.merge(params))
+
+    pp result
+
+    return result.o[:segments]
   end
 
-  def new_segments(segments, params)
-    segments = segments.map do |segment|
+  def new_segments(segments, params = {})
+    segments.each_pair do |name, segment|
       segment[:data] = Base64.encode64(segment[:data])
     end
 
@@ -152,8 +155,8 @@ class View < Model
   end
 
   def get_segment(name, params = {})
-    if(!name.is_a?(String))
-      raise(Exception, "The name parameter should probably be a string")
+    if(!name.is_a?(Symbol))
+      raise(Exception, "The name parameter should probably be a symbol")
     end
 
     result = get_segments(name, params)
@@ -163,11 +166,9 @@ class View < Model
     if(result.size() > 1)
       raise(Exception, "More than one result had that name! (Note: that shouldn't be possible...)")
     end
-    result = result[result.keys[0]]
 
-    if(result[:name] != name)
-      raise(Exception, "It looks like the wrong segment was returned")
-    end
+    # Pull out the one entry we wanted
+    result = result[name.to_sym] # TODO: Make symbols the default
 
     return result
   end
