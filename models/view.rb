@@ -18,9 +18,28 @@ class View < Model
       return
     end
 
-    @o[:segments].map() do |name, segment|
+    @o[:segments].each() do |segment|
       yield(segment)
     end
+  end
+
+  def array_to_hash(array, key)
+    result = {}
+    array.each do |v|
+      result[v.delete(key)] = v
+    end
+
+    return result
+  end
+
+  def hash_to_array(hash, key)
+    result = []
+
+    hash.each_pair do |k, v|
+      result << v.merge(key => k)
+    end
+
+    return result
   end
 
   def after_request()
@@ -31,6 +50,7 @@ class View < Model
         segment[:data] = Base64.decode64(segment[:data])
       end
 
+      # Decode the raw data in the nodes
       if(!segment[:nodes].nil?)
         fixed = {}
         segment[:nodes].each_pair do |k, v|
@@ -44,6 +64,11 @@ class View < Model
         segment[:nodes] = fixed
       end
       segment # return
+    end
+
+    # Convert the segments into a hash
+    if(!@o[:segments].nil?)
+      @o[:segments] = array_to_hash(@o[:segments], :name)
     end
   end
 
@@ -74,27 +99,28 @@ class View < Model
   def new_segment(name, address, file_address, data, params = {})
     result = post_stuff("/views/:view_id/new_segments", {
       :view_id      => self.o[:view_id],
-      :segments     => {name => {
+      :segments     => [
+        :name         => name,
         :address      => address,
         :file_address => file_address,
         :data         => Base64.encode64(data),
-      }}
+      ]
     }.merge(params))
-
-    pp result
 
     return result.o[:segments]
   end
 
   def new_segments(segments, params = {})
-    segments.each_pair do |name, segment|
+    segments.each_value do |segment|
       segment[:data] = Base64.encode64(segment[:data])
     end
 
-    return post_stuff("/views/:view_id/new_segments", {
+    result = post_stuff("/views/:view_id/new_segments", {
       :view_id      => self.o[:view_id],
-      :segments     => segments
+      :segments     => hash_to_array(segments, :name)
     }.merge(params)).o[:segments]
+
+    return result
   end
 
   def delete_segment(name)
@@ -155,8 +181,8 @@ class View < Model
   end
 
   def get_segment(name, params = {})
-    if(!name.is_a?(Symbol))
-      raise(Exception, "The name parameter should probably be a symbol")
+    if(!name.is_a?(String))
+      raise(Exception, "The name parameter should probably be a String")
     end
 
     result = get_segments(name, params)
@@ -166,11 +192,12 @@ class View < Model
     if(result.size() > 1)
       raise(Exception, "More than one result had that name! (Note: that shouldn't be possible...)")
     end
+    if(result[name].nil?)
+      raise(Exception, "One segment was returned, but it wasn't the right one... #{result.keys.pop}")
+    end
 
     # Pull out the one entry we wanted
-    result = result[name.to_sym] # TODO: Make symbols the default
-
-    return result
+    return result[name]
   end
 
   def get_undo_log(params = {})
