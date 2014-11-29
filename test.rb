@@ -782,9 +782,11 @@ begin
 
   title("Undoing the second node")
   result = view.undo(:with_nodes => true)
+
   segment = result['s2']
-  assert_equal(segment[:nodes].length(), 4, "Checking that the right number of nodes were returned")
+  assert_equal(segment[:nodes].length(), 5, "Checking that the right number of nodes were returned")
   assert_hash(segment[:nodes], {
+    0x00000000 => NODE0.merge({:xrefs => nil}),
     0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
     0x00000005 => { :type => 'undefined' },
     0x00000006 => { :type => 'undefined' },
@@ -948,8 +950,13 @@ begin
   }}, "new_nodes")
 
   # Delete a node
-#  result = view.delete_node('A', [0x1008])
+#  result = view.delete_nodes('A', [0x1008])
+#  puts("Direct result:")
 #  pp result
+#
+#  puts()
+#  puts("Everything:")
+#  pp(view.get_segment('A', :with_nodes => true))
 
   # TODO: Create nodes using an array
   # TODO: Segments that don't start at address 0

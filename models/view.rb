@@ -159,17 +159,15 @@ class View < Model
     }.merge(params)).o[:segments]
   end
 
-  def delete_node(name)
-    return post_stuff("/views/:view_id/delete_nodes", {
-      :view_id => self.o[:view_id],
-      :segment => [name],
-    }).o
-  end
+  def delete_nodes(segment, addresses)
+    if(!addresses.is_a?(Array))
+      addresses = [addresses]
+    end
 
-  def delete_nodes(names)
     return post_stuff("/views/:view_id/delete_nodes", {
       :view_id => self.o[:view_id],
-      :segment => names,
+      :segment => segment,
+      :addresses => addresses,
     }).o
   end
 
