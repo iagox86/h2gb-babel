@@ -14,12 +14,14 @@ class View < Model
   end
 
   def edit_segments()
-    if(@o[:segments].nil?)
-      return
-    end
+    if(@o.is_a?(Hash))
+      if(@o[:segments].nil?)
+        return
+      end
 
-    @o[:segments].each() do |segment|
-      yield(segment)
+      @o[:segments].each() do |segment|
+        yield(segment)
+      end
     end
   end
 
@@ -67,8 +69,10 @@ class View < Model
     end
 
     # Convert the segments into a hash
-    if(!@o[:segments].nil?)
-      @o[:segments] = array_to_hash(@o[:segments], :name)
+    if(@o.is_a?(Hash))
+      if(!@o[:segments].nil?)
+        @o[:segments] = array_to_hash(@o[:segments], :name)
+      end
     end
   end
 
@@ -237,5 +241,41 @@ class View < Model
         puts("%s:%08x %s %s [%s]%s" % [segment[:name], node[:address], raw, node[:value], node[:type], xrefs])
       end
     end
+  end
+
+  def set_properties(hash, params = {})
+    if(!hash.is_a?(Hash))
+      raise(Exception, "set_properties() requires a hash")
+    end
+
+    return post_stuff('/views/:view_id/set_properties', {
+      :view_id => self.o[:view_id],
+      :properties => hash,
+    }.merge(params)).o
+  end
+
+  def set_property(key, value, params = {})
+    return set_properties({key=>value}, params)
+  end
+
+  def delete_property(key, params = {})
+    return set_property(key, nil, params)
+  end
+
+  def get_properties(keys = nil, params = {})
+    if(!keys.nil? && !keys.is_a?(Array))
+      raise(Exception, "WARNING: 'keys' needs to be an array")
+    end
+
+    result = post_stuff('/views/:view_id/get_properties', {
+      :view_id => self.o[:view_id],
+      :keys => keys,
+    }.merge(params))
+
+    return result.o
+  end
+
+  def get_property(key, params = {})
+    return get_properties([key], params)[key]
   end
 end

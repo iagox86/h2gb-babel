@@ -1200,17 +1200,127 @@ def test_xrefs()
   assert_equal(result, {}, "Checking if the segment was deleted")
 end
 
+def test_properties()
+  binary = Binary.find(@@binary_id)
+
+  binary.set_property(:test,  123)
+  binary.set_property(:test2, "1234")
+  assert_equal(binary.get_property(:test),  123,    "Checking if an integer property works")
+  assert_equal(binary.get_property(:test2), "1234", "Checking if a string property works")
+
+  binary.set_property(:test, [1, 2, 3])
+  assert_array(binary.get_property(:test), [1, 2, 3], "property_overwrite_array_1")
+
+  binary.set_property(:test, { :a => "b", :c => 123 })
+  assert_hash(binary.get_property(:test), { :a => "b", :c => 123 }, "property_store_hash_1", true)
+
+  binary.set_properties({ :a => 'b', :c => 'd', :e => 1 })
+  assert_hash(binary.get_properties([:a, :c, :e]), {
+    :a => 'b',
+    :c => 'd',
+    :e => 1,
+  }, "property_multiple_hashes_1", true)
+  assert_hash(binary.get_properties(), {
+    :a => 'b',
+    :c => 'd',
+    :e => 1,
+    :test => { :a => "b", :c => 123 },
+    :test2 => "1234",
+  }, "property_all_properties_1", true)
+
+  binary.delete_property(:test)
+  assert_hash(binary.get_properties(), {
+    :a => 'b',
+    :c => 'd',
+    :e => 1,
+    :test2 => "1234",
+  }, "property_delete_value_1", true)
+
+  workspace = Workspace.find(@@workspace_id)
+
+  workspace.set_property(:test,  123)
+  workspace.set_property(:test2, "1234")
+  assert_equal(workspace.get_property(:test),  123,    "Checking if an integer property works")
+  assert_equal(workspace.get_property(:test2), "1234", "Checking if a string property works")
+
+  workspace.set_property(:test, [1, 2, 3])
+  assert_array(workspace.get_property(:test), [1, 2, 3], "property_overwrite_array_2")
+
+  workspace.set_property(:test, { :a => "b", :c => 123 })
+  assert_hash(workspace.get_property(:test), { :a => "b", :c => 123 }, "property_store_hash_2", true)
+
+  workspace.set_properties({ :a => 'b', :c => 'd', :e => 1 })
+  assert_hash(workspace.get_properties([:a, :c, :e]), {
+    :a => 'b',
+    :c => 'd',
+    :e => 1,
+  }, "property_multiple_hashes_2", true)
+  assert_hash(workspace.get_properties(), {
+    :a => 'b',
+    :c => 'd',
+    :e => 1,
+    :test => { :a => "b", :c => 123 },
+    :test2 => "1234",
+  }, "property_all_properties_2", true)
+
+  workspace.delete_property(:test)
+  assert_hash(workspace.get_properties(), {
+    :a => 'b',
+    :c => 'd',
+    :e => 1,
+    :test2 => "1234",
+  }, "property_delete_value_2", true)
+
+  view = View.find(@@view_id)
+
+  view.set_property(:test,  123)
+  view.set_property(:test2, "1234")
+  assert_equal(view.get_property(:test),  123,    "Checking if an integer property works")
+  assert_equal(view.get_property(:test2), "1234", "Checking if a string property works")
+
+  view.set_property(:test, [1, 2, 3])
+  assert_array(view.get_property(:test), [1, 2, 3], "property_overwrite_array_3")
+
+  view.set_property(:test, { :a => "b", :c => 123 })
+  assert_hash(view.get_property(:test), { :a => "b", :c => 123 }, "property_store_hash_3", true)
+
+  view.set_properties({ :a => 'b', :c => 'd', :e => 1 })
+  assert_hash(view.get_properties([:a, :c, :e]), {
+    :a => 'b',
+    :c => 'd',
+    :e => 1,
+  }, "property_multiple_hashes_3", true)
+  assert_hash(view.get_properties(), {
+    :a => 'b',
+    :c => 'd',
+    :e => 1,
+    :test => { :a => "b", :c => 123 },
+    :test2 => "1234",
+  }, "property_all_properties_3", true)
+
+  view.delete_property(:test)
+  assert_hash(view.get_properties(), {
+    :a => 'b',
+    :c => 'd',
+    :e => 1,
+    :test2 => "1234",
+  }, "property_delete_value_3", true)
+end
+
 begin
+  # Tests for binaries
   test_create_binary() # Mandatory (sets @@binary_id)
   test_get_all_binaries()
   test_find_binary()
   test_save_binary()
 
+  # Tests for workspaces
   test_create_workspace() # Mandatory (sets @@workspace_id)
   test_get_all_workspaces()
   test_find_workspace()
   test_save_workspace()
 
+  # Tests for views
   test_create_view() # Mandatory (sets @@view_id)
   test_get_all_views()
   test_find_view()
@@ -1223,6 +1333,9 @@ begin
   test_create_multiple_segments()
   test_create_multiple_nodes()
   test_xrefs()
+
+  # Tests for everything
+  test_properties()
 
   puts("ALL DONE! EVERYTHING IS GOOD!!!")
 rescue Exception => e

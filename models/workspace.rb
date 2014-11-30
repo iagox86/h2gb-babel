@@ -38,4 +38,40 @@ class Workspace < Model
   def delete(params = {})
     return delete_stuff('/workspaces/:workspace_id', params.merge({:workspace_id => self.o[:workspace_id]}))
   end
+
+  def set_properties(hash, params = {})
+    if(!hash.is_a?(Hash))
+      raise(Exception, "set_properties() requires a hash")
+    end
+
+    return post_stuff('/workspaces/:workspace_id/set_properties', {
+      :workspace_id => self.o[:workspace_id],
+      :properties => hash,
+    }.merge(params)).o
+  end
+
+  def set_property(key, value, params = {})
+    return set_properties({key=>value}, params)
+  end
+
+  def delete_property(key, params = {})
+    return set_property(key, nil, params)
+  end
+
+  def get_properties(keys = nil, params = {})
+    if(!keys.nil? && !keys.is_a?(Array))
+      raise(Exception, "WARNING: 'keys' needs to be an array")
+    end
+
+    result = post_stuff('/workspaces/:workspace_id/get_properties', {
+      :workspace_id => self.o[:workspace_id],
+      :keys => keys,
+    }.merge(params))
+
+    return result.o
+  end
+
+  def get_property(key, params = {})
+    return get_properties([key], params)[key]
+  end
 end
