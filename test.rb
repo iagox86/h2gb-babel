@@ -18,15 +18,15 @@ require 'pp' # TODO: Debug
 # Some constants
 NODE0 = {
   :type => "dword0",
-  :value => "db 41414141 [I'm at 0x00000000]"
+  :value => "value0"
 }
 NODE4 = {
   :type => "dword4",
-  :value => "db 42424242 [I'm at 0x00000004]"
+  :value => "value4"
 }
 NODE2 = {
   :type => "dword2",
-  :value => "db 43434343 [I'm at 0x00000002]"
+  :value => "value2"
 }
 
 def assert(boolean, test, pass = nil, fail = nil)
@@ -46,11 +46,11 @@ def assert(boolean, test, pass = nil, fail = nil)
 end
 
 def assert_equal(received, expected, description)
-  return assert(expected === received, description, "VALUE: #{received}", "EXPECTED: #{expected}, RECEIVED: #{received}")
+  return assert(expected === received, description, nil, "EXPECTED: #{expected}:#{expected.class}, RECEIVED: #{received}:#{received.class}")
 end
 
 def assert_nil(value, description)
-  return assert(value.nil?, description, nil, "EXPECTED: nil, RECEIVED: #{value}")
+  return assert(value.nil?, description, nil, "EXPECTED: nil, RECEIVED: #{value}:#{value.class}")
 end
 
 def assert_not_nil(value, description)
@@ -61,17 +61,9 @@ def assert_type(value, expected_class, description)
   return assert(value.is_a?(expected_class), description, nil, "EXPECTED: #{expected_class}, RECEIVED: #{value.class}")
 end
 
-@@revision = 0
-def assert_revision(value, description)
-  result = assert(value >= @@revision, description, nil, "EXPECTED: at least #{@@revision}, RECEIVED: #{value}")
-  @@revision = value
-
-  return result
-end
-
 def assert_array(received, expected, description)
-  if(assert_type(received, Array, "#{description}: verifying it's an Array"))
-    if(assert_equal(received.length(), expected.length(), "#{description}: Checking array length"))
+  if(assert_type(received, Array, "Checking #{description}: verifying it's an Array"))
+    if(assert_equal(received.length(), expected.length(), "Checking if #{description} has correct array length"))
       0.upto(expected.length() - 1) do |i|
         r = received[i]
         e = expected[i]
@@ -81,22 +73,26 @@ def assert_array(received, expected, description)
         elsif(e.is_a?(Hash))
           assert_hash(r, e, "#{description}[#{i}]")
         else
-          assert_equal(r, e, "#{description}[#{i}]")
+          assert_equal(r, e, "Checking #{description}[#{i}]")
         end
       end
     end
   end
 end
 
-def assert_hash(received, expected, description)
-  if(assert_type(received, Hash, "#{description}: verifying it's a Hash"))
+def assert_hash(received, expected, description, check_length = false)
+  if(assert_type(received, Hash, "Checking #{description}: verifying it's a Hash"))
+    if(check_length)
+      assert_equal(received.length, expected.length, "Checking #{description}.length()")
+    end
+
     expected.each_key do |k|
       if(expected[k].is_a?(Hash))
         assert_hash(received[k], expected[k], "#{description}[#{k}]")
       elsif(expected[k].is_a?(Array))
         assert_array(received[k], expected[k], "#{description}[#{k}]")
       else
-        assert_equal(received[k], expected[k], "#{description}[#{k}]")
+        assert_equal(received[k], expected[k], "Checking #{description}[#{k}]")
       end
     end
   end
@@ -126,11 +122,12 @@ def test_create_binary()
 
   assert_not_nil(binary, "Checking if the binary was created")
   assert_not_nil(binary.o, "Checking if the binary was returned")
-  assert_type(binary.o, Hash, "Checking if the binary was returned as a hash")
   assert_type(binary.o[:binary_id], Fixnum, "Checking if the binary's id is numeric")
-  assert_equal(binary.o[:name], "Binary Test", "Checking if the binary's name is right")
-  assert_equal(binary.o[:comment], "Test binary", "Checking if the binary's comment is correct")
-  assert_nil(binary.o[:data], "Checking that the binary's data wasn't returned")
+  assert_hash(binary.o, {
+    :name    => "Binary Test",
+    :comment => "Test binary",
+    :data    => nil,
+  }, "binary_create")
 
   @@binary_id = binary.o[:binary_id]
 end
@@ -138,41 +135,34 @@ end
 def test_get_all_binaries()
   title("Testing retrieving all binaries (with data)")
   all_binaries = Binary.all(:with_data => true)
-  good = false
-  all_binaries.o[:binaries].each do |b|
-    if(b[:binary_id] == @@binary_id)
-      good = true
+  assert(all_binaries.o[:binaries].length > 0, "Checking if at least one binary was returned")
+  binary = all_binaries.o[:binaries].pop()
 
-      assert(true, "Checking if our binary is present")
-      assert_equal(b[:name], "Binary Test", "Checking if the binary's name is right")
-      assert_equal(b[:comment], "Test binary", "Checking if the binary's comment is correct")
-      assert_equal(b[:data], "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "Checking if the binary's data is correct")
-    end
-  end
-  assert(good, "Checking if our binary is present")
+  assert_hash(binary, {
+    :binary_id => @@binary_id,
+    :name      => "Binary Test",
+    :comment   => "Test binary",
+    :data      => "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  } , "get_all_binaries")
 
   title("Testing retrieving all binaries (without data)")
   all_binaries = Binary.all(:with_data => false)
-  good = false
-  all_binaries.o[:binaries].each do |b|
-    if(b[:binary_id] == @@binary_id)
-      good = true
+  assert(all_binaries.o[:binaries].length > 0, "Checking if at least one binary was returned")
+  binary = all_binaries.o[:binaries].pop()
 
-      assert(true, "Checking if our binary is present")
-      assert_equal(b[:name], "Binary Test", "Checking if the binary's name is right")
-      assert_equal(b[:comment], "Test binary", "Checking if the binary's comment is correct")
-      assert_nil(b[:data], "Checking if the binary's data is correctly skipped")
-    end
-  end
-  assert(good, "Checking if our binary is present")
+  assert_hash(binary, {
+    :binary_id => @@binary_id,
+    :name      => "Binary Test",
+    :comment   => "Test binary",
+    :data      => nil,
+  } , "get_all_binaries")
 end
 
 def test_find_binary()
   title("Testing searching for a binary (no data)")
   binary = Binary.find(@@binary_id)
 
-  assert_not_nil(binary, "The binary is successfully found")
-  assert_not_nil(binary.o, "The binary's object is returned")
+  assert_not_nil(binary, "Checking if anything was returned")
   assert_hash(binary.o, {
     :binary_id => @@binary_id,
     :name      => "Binary Test",
@@ -183,9 +173,7 @@ def test_find_binary()
   title("Testing searching for a binary (with data)")
   binary = Binary.find(@@binary_id, :with_data => true)
 
-  assert_not_nil(binary, "The binary is successfully found")
-  assert_not_nil(binary.o, "The binary's object is returned")
-  assert_not_nil(binary.o, "The binary's object is returned")
+  assert_not_nil(binary, "Checking if anything was returned")
   assert_hash(binary.o, {
     :binary_id => @@binary_id,
     :name      => "Binary Test",
@@ -201,7 +189,7 @@ def test_save_binary()
   binary.o[:comment] = "updated comment"
   saved = binary.save(:with_data => true)
 
-  assert_not_nil(saved, "A binary is successfully saved")
+  assert_not_nil(saved, "Checking if anything was returned")
   assert_hash(saved.o, {
     :binary_id => @@binary_id,
     :name      => "new binary name",
@@ -210,9 +198,8 @@ def test_save_binary()
   }, "test_save_binary_1")
 
   title("Verifying the update by re-fetching the record")
-
   loaded = Binary.find(@@binary_id, :with_data => true)
-  assert_not_nil(loaded, "A binary is successfully saved")
+  assert_not_nil(loaded, "Checking if anything was returned")
   assert_hash(loaded.o, {
     :binary_id => @@binary_id,
     :name      => "new binary name",
@@ -227,14 +214,15 @@ def test_create_workspace()
   title("Create a workspace")
   workspace = Workspace.create(
     :binary_id => @@binary_id,
-    :name => "test workspace"
+    :name      => "test workspace"
+    # TODO: Properties
   )
 
-  assert_not_nil(workspace, "A workspace is successfully created")
-  assert_not_nil(workspace.o, "The workspace's object is returned")
-  assert_type(workspace.o, Hash, "The workspace's object is a hash")
-  assert_type(workspace.o[:workspace_id], Fixnum, "The workspace's id value is present and numeric")
-  assert_equal(workspace.o[:name], "test workspace", "The workspace's name is right")
+  assert_not_nil(workspace, "Checking if anything was returned")
+  assert_type(workspace.o[:workspace_id], Fixnum, "Checking if the workspace's id value is present and numeric")
+  assert_hash(workspace.o, {
+    :name => "test workspace",
+  }, "create_workspace")
 
   @@workspace_id = workspace.o[:workspace_id]
 end
@@ -243,19 +231,24 @@ def test_get_all_workspaces()
   title("Testing retrieving all workspaces")
   all_workspaces = Workspace.all(:binary_id => @@binary_id)
 
-  assert_equal(all_workspaces.o[:workspaces].length(), 1, "Making sure the new binary only has one workspace")
-  assert_equal(all_workspaces.o[:workspaces][0][:workspace_id], @@workspace_id, "Making sure the id of the retrieved workspace is right")
-  assert_equal(all_workspaces.o[:workspaces][0][:binary_id], @@binary_id, "Making sure the workspace belongs to the correct binary")
+  assert_array(all_workspaces.o[:workspaces], [
+    {
+      :workspace_id => @@workspace_id,
+      :binary_id    => @@binary_id,
+      :name         => "test workspace",
+      # TODO: Properties
+    }
+  ], "get_all_workspaces")
 end
 
 def test_find_workspace()
   title("Finding the workspace")
   new_workspace = Workspace.find(@@workspace_id)
-  assert_not_nil(new_workspace, "A workspace is successfully found")
-  assert_not_nil(new_workspace.o, "The workspace's object is returned")
-  assert_type(new_workspace.o, Hash, "The workspace's object is a hash")
-  assert_equal(new_workspace.o[:workspace_id], @@workspace_id, "The workspace's id matches the created workspace")
-  assert_equal(new_workspace.o[:name], "test workspace", "The workspace's name matches the created workspace")
+  assert_not_nil(new_workspace, "Checking if something was returned")
+  assert_hash(new_workspace.o, {
+    :workspace_id => @@workspace_id,
+    :name         => "test workspace"
+  }, "find_workspace")
 end
 
 def test_save_workspace()
@@ -265,21 +258,21 @@ def test_save_workspace()
   workspace.o[:name] = 'new name!?'
   updated = workspace.save()
 
-  assert_not_nil(updated, "A workspace is successfully updated")
-  assert_not_nil(updated.o, "The workspace's object is returned")
-  assert_type(updated.o, Hash, "The workspace's object is a hash")
-  assert_equal(updated.o[:workspace_id], @@workspace_id, "The workspace's id matches the created workspace")
-  assert_equal(updated.o[:name], workspace.o[:name], "The workspace's name was updated properly")
+  assert_not_nil(updated, "Checking if something was returned")
+  assert_hash(updated.o, {
+    :workspace_id => @@workspace_id,
+    :name         => "new name!?",
+  }, "save_workspace_1")
 
   title("Doing another search for the updated workspace, just to be sure")
 
   updated = Workspace.find(@@workspace_id)
 
-  assert_not_nil(updated, "A workspace is successfully updated")
-  assert_not_nil(updated.o, "The workspace's object is returned")
-  assert_type(updated.o, Hash, "The workspace's object is a hash")
-  assert_equal(updated.o[:workspace_id], @@workspace_id, "The workspace's id matches the created workspace")
-  assert_equal(updated.o[:name], workspace.o[:name], "The workspace's name was updated properly")
+  assert_not_nil(updated, "Checking if something was returned")
+  assert_hash(updated.o, {
+    :workspace_id => @@workspace_id,
+    :name         => "new name!?",
+  }, "save_workspace_2")
 end
 
 def test_create_view()
@@ -287,16 +280,15 @@ def test_create_view()
   title("Create a view")
   view = View.create(
     :workspace_id => @@workspace_id,
-    :name => "test view"
+    :name         => "test view"
   )
 
-  assert_not_nil(view, "A view is successfully created")
-  assert_not_nil(view.o, "The view's object is returned")
-  assert_type(view.o, Hash, "The view's object is a hash")
-  assert_type(view.o[:view_id], Fixnum, "The view's id value is present and numeric")
-  assert_equal(view.o[:name], "test view", "The view's name is right")
-  assert_nil(view.o[:segments], "No segments were returned")
-  assert_revision(view.o[:revision], "The first revision")
+  assert_not_nil(view, "Checking if something was returned")
+  assert_type(view.o[:view_id], Fixnum, "Checking if the view's id value is sane")
+  assert_hash(view.o, {
+    :name     => "test view",
+    :segments => nil,
+  }, "create_view")
 
   @@view_id = view.o[:view_id]
 end
@@ -305,21 +297,25 @@ def test_get_all_views()
   title("Testing retrieving all views")
   all_views = View.all(:workspace_id => @@workspace_id)
 
-  assert_equal(all_views.o[:views].length(), 1, "Making sure the new workspace only has one view")
-  assert_equal(all_views.o[:views][0][:view_id], @@view_id, "Making sure the id of the retrieved view is right")
-  assert_equal(all_views.o[:views][0][:workspace_id], @@workspace_id, "Making sure the view belongs to the correct workspace")
-  assert_equal(all_views.o[:views][0][:revision], 1, "The revision hasn't changed")
+  assert_array(all_views.o[:views], [
+    {
+      :view_id      => @@view_id,
+      :workspace_id => @@workspace_id,
+      :name         => "test view",
+      :revision     => 1,
+    },
+  ], "get_all_views")
 end
 
 def test_find_view()
   title("Finding the view")
   new_view = View.find(@@view_id)
-  assert_not_nil(new_view, "A view is successfully found")
-  assert_not_nil(new_view.o, "The view's object is returned")
-  assert_type(new_view.o, Hash, "The view's object is a hash")
-  assert_equal(new_view.o[:view_id], @@view_id, "The view's id matches the created view")
-  assert_equal(new_view.o[:name], "test view", "The view's name matches the created view")
-  assert_nil(new_view.o[:segments], "No segments were returned")
+  assert_not_nil(new_view, "Checking if anything was returned")
+  assert_hash(new_view.o, {
+    :view_id  => @@view_id,
+    :name     => "test view",
+    :segments => nil,
+  }, "find_view")
 end
 
 def test_update_view()
@@ -329,36 +325,179 @@ def test_update_view()
   view.o[:name] = 'new name!?'
   updated = view.save()
 
-  assert_not_nil(updated, "A view is successfully updated")
-  assert_not_nil(updated.o, "The view's object is returned")
-  assert_type(updated.o, Hash, "The view's object is a hash")
-  assert_equal(updated.o[:view_id], @@view_id, "The view's id matches the created view")
-  assert_equal(updated.o[:name], view.o[:name], "The view's name was updated properly")
-  assert_nil(updated.o[:segments], "No segments were returned")
+  assert_not_nil(updated, "Checking if something was returned")
+  assert_hash(updated.o, {
+    :view_id  => @@view_id,
+    :name     => "new name!?",
+    :segments => nil,
+  }, "update_view_1")
 
   title("Doing another search for the updated view, just to be sure")
 
-  updated = View.find(@@view_id)
-
-  assert_not_nil(updated, "A view is successfully updated")
-  assert_not_nil(updated.o, "The view's object is returned")
-  assert_type(updated.o, Hash, "The view's object is a hash")
-  assert_equal(updated.o[:view_id], @@view_id, "The view's id matches the created view")
-  assert_equal(updated.o[:name], view.o[:name], "The view's name was updated properly")
-  assert_nil(updated.o[:segments], "No segments were returned")
+  updated = View.find(@@view_id, :with_segments => true)
+  assert_not_nil(updated, "Checking if something was returned")
+  assert_hash(updated.o, {
+    :view_id  => @@view_id,
+    :name     => "new name!?",
+    :segments => {},
+  }, "update_view_1")
 end
 
-def test_segments()
+def test_create_segment()
+  view = View.find(@@view_id)
+  view.reset()
+
+  start_revision = view.o[:revision]
+
+  title("Creating a segment")
+  segments = view.new_segment('create_segment_1', 0x00000000, 0x00004000, "AAAAAAAA")
+  assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
+  assert_hash(segments, {
+    'create_segment_1' => { :address => 0, :file_address => 0x4000, :data => nil},
+  }, "create_segment_1")
+
+  title("Creating another segment (only the new segment should be returned)")
+  segments = view.new_segment('create_segment_2', 0x00000000, 0x00004000, "AAAAAAAA")
+  assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
+  assert_hash(segments, {
+    'create_segment_2' => { :address => 0, :file_address => 0x4000, :data => nil},
+  }, "create_segment_2")
+
+  title("Creating another segment and requesting all changes since the first segment")
+  segments = view.new_segment('create_segment_3', 0x00000000, 0x00004000, "AAAAAAAA", { :since => start_revision })
+  assert_equal(segments.length, 3, "Checking if the right number of segments were returned")
+  assert_hash(segments, {
+    'create_segment_1' => { :address => 0, :file_address => 0x4000, :data => nil},
+    'create_segment_2' => { :address => 0, :file_address => 0x4000, :data => nil},
+    'create_segment_3' => { :address => 0, :file_address => 0x4000, :data => nil},
+  }, "create_segment_3")
+end
+
+def test_delete_segment()
+  view = View.find(@@view_id)
+  view.reset()
+
+  start_revision = view.o[:revision]
+
+  title("Creating a segment")
+  segments = view.new_segment('delete_segment_1', 0x00000000, 0x00004000, "AAAAAAAA")
+  assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
+  assert_hash(segments, {
+    'delete_segment_1' => { :address => 0, :file_address => 0x4000, :data => nil},
+  }, "delete_segment_1")
+
+  title("Creating another segment (only the new segment should be returned)")
+  segments = view.new_segment('delete_segment_2', 0x00000000, 0x00004000, "AAAAAAAA")
+  assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
+  assert_hash(segments, {
+    'delete_segment_2' => { :address => 0, :file_address => 0x4000, :data => nil},
+  }, "delete_segment_2")
+
+  title("Deleting the second segment, nothing should be returned")
+  result = view.delete_segment('delete_segment_2')
+  assert_equal(result, {}, "Checking that nothing is returned")
+
+  title("Creating another segment and requesting all changes since the first segment")
+  segments = view.new_segment('delete_segment_3', 0x00000000, 0x00004000, "AAAAAAAA", { :since => start_revision })
+  assert_equal(segments.length, 2, "Checking if the right number of segments were returned")
+  assert_hash(segments, {
+    'delete_segment_1' => { :address => 0, :file_address => 0x4000, :data => nil},
+    'delete_segment_3' => { :address => 0, :file_address => 0x4000, :data => nil},
+  }, "delete_segment_3")
+
+  title("Deleting the third segment, and requesting all changes since the first segment")
+  segments = view.delete_segment('delete_segment_3', {:since => start_revision})
+  assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
+  assert_hash(segments, {
+    'delete_segment_1' => { :address => 0, :file_address => 0x4000, :data => nil},
+  }, "delete_segment_4")
+end
+
+def test_find_segments()
+  title("Testing finding segments")
+
+  view = View.find(@@view_id)
+  view.reset()
+
+  segments = view.new_segment('s1', 0x00000000, 0x00004000, "AAAAAAAA")
+
+  title("Find segments (w/ default)")
+
+  segments = view.get_segments('s1')
+  assert_equal(segments.length(), 1, "Checking if the proper number of segments were returned")
+  assert_hash(segments, {
+    's1' => {
+      :nodes => nil,
+      :data  => nil,
+    }
+  }, "find_segments_1")
+
+  title("Find segments (without data, without nodes)")
+  segments = view.get_segments('s1', :with_data => false, :with_nodes => false)
+  assert_equal(segments.length(), 1, "Checking if the proper number of segments were returned")
+  assert_hash(segments, {
+    's1' => {
+      :nodes => nil,
+      :data  => nil,
+    }
+  }, "find_segments_2")
+
+  title("Find segments (without data, with nodes)")
+  segments = view.get_segments('s1', :with_data => false, :with_nodes => true)
+  assert_equal(segments.length(), 1, "Checking if the proper number of segments were returned")
+  assert_hash(segments, {
+    's1' => {
+      :nodes => {},
+      :data  => nil,
+    }
+  }, "find_segments_3")
+
+  title("Find segments (with data, without nodes")
+  segments = view.get_segments('s1', :with_data => true, :with_nodes => false)
+  assert_equal(segments.length(), 1, "Checking if the proper number of segments were returned")
+  assert_hash(segments, {
+    's1' => {
+      :nodes => nil,
+      :data  => 'AAAAAAAA',
+    }
+  }, "find_segments_4")
+
+  title("Find segments (with data, with nodes")
+  segments = view.get_segments('s1', :with_data => true, :with_nodes => true)
+  assert_equal(segments.length(), 1, "Checking if the proper number of segments were returned")
+  assert_hash(segments, {
+    's1' => {
+      :nodes => {},
+      :data  => 'AAAAAAAA',
+    }
+  }, "find_segments_5")
+
+  title("Find segments (without segments, because YOLO)")
+  segments = view.get_segments('s1', :with_segments => false)
+  assert_nil(segments, "Checking that no segments were returned")
+
+  title("Find all segments")
+  segments = view.get_segments()
+  assert_equal(segments.length(), 1, "Checking if the proper number of segments were returned")
+  assert_hash(segments, {
+    's1' => {
+      :nodes => nil,
+      :data  => nil,
+    }
+  }, "find_segments_1")
+
+  title("Deleting the segment")
+  result = view.delete_segment('s1')
+  assert_equal(result, {}, "Checking if the segment was deleted")
+  assert_equal(view.get_segments().length(), 0, "Checking again if the segment was deleted")
+end
+
+def test_undo()
   title("Create segment")
   view = View.find(@@view_id)
+  view.reset()
+
   segments = view.new_segment('s1', 0x00000000, 0x00004000, "AAAAAAAA")
-  assert_type(segments, Hash, "The segment was created")
-  assert_equal(segments.keys.length(), 1, "Only one segment was returned")
-  segment = segments['s1']
-  assert_type(segment, Hash, "The segment was created")
-  assert_revision(segment[:revision], "The revision is increasing")
-  assert_nil(segment[:nodes], "Segment isn't returning any nodes")
-  assert_nil(segment[:data], "Segment isn't returning any data")
 
   title("Verifying the undo log")
   assert_hash(view.get_undo_log, {
@@ -374,68 +513,7 @@ def test_segments()
     ],
     :redo => [
     ],
-  }, "Checking the undo/redo logs after creating the new segment")
-
-  title("Find segments (w/ default)")
-  segments = view.get_segments('s1')
-  assert_type(segments, Hash, "The segment was found")
-  assert_equal(segments.keys.length(), 1, "Only one segment was returned")
-  segment = segments['s1']
-  assert_type(segment, Hash, "The segment was found")
-  assert_revision(segment[:revision], "The revision is increasing")
-  assert_nil(segment[:nodes], "Segment isn't returning any nodes")
-  assert_nil(segment[:data], "Segment isn't returning any data")
-
-  title("Find segments (without data, without nodes)")
-  segments = view.get_segments('s1', :with_data => false, :with_nodes => false)
-  assert_type(segments, Hash, "The segment was found")
-  assert_equal(segments.keys.length(), 1, "Only one segment was returned")
-  segment = segments['s1']
-  assert_type(segment, Hash, "The segment was found")
-  assert_revision(segment[:revision], "The revision is increasing")
-  assert_nil(segment[:data], "Segment isn't returning any data")
-  assert_nil(segment[:nodes], "Segment isn't returning any nodes")
-
-  title("Find segments (without data, with nodes)")
-  segments = view.get_segments('s1', :with_data => false, :with_nodes => true)
-  assert_type(segments, Hash, "The segment was found")
-  assert_equal(segments.keys.length(), 1, "Only one segment was returned")
-  segment = segments['s1']
-  assert_type(segment, Hash, "The segment was found")
-  assert_revision(segment[:revision], "The revision is increasing")
-  assert_nil(segment[:data], "Segment isn't returning any data")
-  assert_type(segment[:nodes], Hash, "Nodes are returned as a hash")
-
-  title("Find segments (with data, without nodes")
-  segments = view.get_segments('s1', :with_data => true, :with_nodes => false)
-  assert_type(segments, Hash, "The segment was found")
-  assert_equal(segments.keys.length(), 1, "Only one segment was returned")
-  segment = segments['s1']
-  assert_type(segment, Hash, "The segment was found")
-  assert_revision(segment[:revision], "The revision is increasing")
-  assert_type(segment[:data], String, "Data is returned as a string")
-  assert_equal(segment[:data], "AAAAAAAA", "Checking the data returned")
-  assert_nil(segment[:nodes], "Segment isn't returning any nodes")
-
-  title("Find segments (with data, with nodes")
-  segments = view.get_segments('s1', :with_data => true, :with_nodes => true)
-  assert_type(segments, Hash, "The segment was found")
-  assert_equal(segments.keys.length(), 1, "Only one segment was returned")
-  segment = segments['s1']
-  assert_type(segment, Hash, "The segment was found")
-  assert_revision(segment[:revision], "The revision is increasing")
-  assert_type(segment[:data], String, "Data is returned as a string")
-  assert_equal(segment[:data], "AAAAAAAA", "Checking the data returned")
-  assert_type(segment[:nodes], Hash, "Nodes are returned as a hash")
-
-  title("Find segments (without segments, because YOLO)")
-  segments = view.get_segments('s1', :with_segments => false, :with_data => false, :with_nodes => false)
-  assert_nil(segments, "No segments were returned")
-
-  title("Find all segments")
-  segments = view.get_segments()
-  assert_equal(segments.length(), 1, "Checking if getting all segments returns exactly one segment")
-  assert_not_nil(segments['s1'], "Checking if the correct segment was returned")
+  }, "undo1")
 
   title("Deleting the segment")
   view.delete_segment('s1')
@@ -463,19 +541,17 @@ def test_segments()
     ],
     :redo => [
     ],
-  }, "Checking the undo/redo logs after creating the new segment")
+  }, "undo2")
 
   title("Testing undo (should restore the deleted segment)")
   segments = view.undo(:with_data => true, :with_nodes => true)
-  assert_equal(segments.length(), 1, "Checking if the segment was restored")
-  assert_type(segments, Hash, "The segment was found")
-  assert_equal(segments.keys.length(), 1, "Only one segment was returned")
-  segment = segments['s1']
-  assert_type(segment, Hash, "The segment was found")
-  assert_revision(segment[:revision], "The revision is increasing")
-  assert_type(segment[:data], String, "Data is returned as a string")
-  assert_equal(segment[:data], "AAAAAAAA", "Checking the data returned")
-  assert_type(segment[:nodes], Hash, "Nodes are returned as a hash")
+  assert_equal(segments.length(), 1, "Checking if the number of segments returned was right")
+  assert_hash(segments, {
+    's1' => {
+      :data => 'AAAAAAAA',
+      :nodes => {},
+    }
+  }, 'undo2.5')
 
   title("Verifying the undo log")
   assert_hash(view.get_undo_log, {
@@ -499,18 +575,17 @@ def test_segments()
         :backward  => { :type => 'method', :method => 'create_segments', :params => [{:name => 's1'}] },
       },
     ],
-  }, "Checking the undo/redo logs after creating the new segment")
+  }, "undo3")
 
   title("Double-checking undo")
   segments = view.get_segments('s1', :with_data => true, :with_nodes => true)
-  assert_type(segments, Hash, "The segment was found")
-  assert_equal(segments.keys.length(), 1, "Only one segment was returned")
-  segment = segments['s1']
-  assert_type(segment, Hash, "The segment was found")
-  assert_revision(segment[:revision], "The revision is increasing")
-  assert_type(segment[:data], String, "Data is returned as a string")
-  assert_equal(segment[:data], "AAAAAAAA", "Checking the data returned")
-  assert_type(segment[:nodes], Hash, "Nodes are returned as a hash")
+  assert_equal(segments.length(), 1, "Checking if the proper number of segments were returned")
+  assert_hash(segments, {
+    's1' => {
+      :data  => 'AAAAAAAA',
+      :nodes => {},
+    }
+  }, 'undo3.5')
 
   title("Testing a second undo (should undo the segment's initial creation)")
   segments = view.undo(:with_data => true, :with_nodes => true)
@@ -537,19 +612,17 @@ def test_segments()
         :backward => { :type => 'method', :method => 'delete_segments', :params => 's1' },
       },
     ],
-  }, "Checking the undo/redo logs after creating the new segment")
+  }, "undo4")
 
   title("Testing redo (should restore the segment)")
   segments = view.redo(:with_data => true, :with_nodes => true)
   assert_equal(segments.length(), 1, "Checking if the segment was restored")
-  assert_type(segments, Hash, "The segment was found")
-  assert_equal(segments.keys.length(), 1, "Only one segment was returned")
-  segment = segments['s1']
-  assert_type(segment, Hash, "The segment was found")
-  assert_revision(segment[:revision], "The revision is increasing")
-  assert_type(segment[:data], String, "Data is returned as a string")
-  assert_equal(segment[:data], "AAAAAAAA", "Checking the data returned")
-  assert_type(segment[:nodes], Hash, "Nodes are returned as a hash")
+  assert_hash(segments, {
+    's1' => {
+      :data  => 'AAAAAAAA',
+      :nodes => {},
+    }
+  }, 'undo4.5')
 
   assert_hash(view.get_undo_log, {
     :undo => [
@@ -572,24 +645,25 @@ def test_segments()
         :backward => { :type => 'method', :method => 'create_segments', :params => [{:name => 's1'}] },
       },
     ],
-  }, "Checking the undo/redo logs after re-doing the creation of the first segment")
+  }, "undo5")
 
   title("Double-checking redo")
   segments = view.get_segments('s1', :with_data => true, :with_nodes => true)
-  assert_type(segments, Hash, "The segment was found")
-  assert_equal(segments.keys.length(), 1, "Only one segment was returned")
-  segment = segments['s1']
-  assert_type(segment, Hash, "The segment was found")
-  assert_revision(segment[:revision], "The revision is increasing")
-  assert_type(segment[:data], String, "Data is returned as a string")
-  assert_equal(segment[:data], "AAAAAAAA", "Checking the data returned")
-  assert_type(segment[:nodes], Hash, "Nodes are returned as a hash")
+  assert_equal(segments.keys.length(), 1, "Checking if the proper number of segments were returned")
+  assert_hash(segments, {
+    's1' => {
+      :data  => 'AAAAAAAA',
+      :nodes => {},
+    }
+  }, 'undo5.5')
 
   title("Creating a segment to hopefully kill the redo buffer")
-  new_view = view.new_segment("deleteme", 0x00000000, 0x00004000, "ABCDEFGH")
-  assert_type(new_view, Hash, "Checking if the new view returned properly")
-  segments = view.get_segments()
-  assert_equal(segments.length, 2, "Making sure there are now 2 segments")
+  segments = view.new_segment("deleteme", 0x00000000, 0x00004000, "ABCDEFGH", :since => 0)
+  assert_equal(segments.length, 2, "Checking if both segments were returned (if this fails, :since is probably broken)")
+  assert_hash(segments, {
+    's1'       => {},
+    'deleteme' => {},
+  }, 'undo5.75')
 
   assert_hash(view.get_undo_log, {
     :undo => [
@@ -611,14 +685,16 @@ def test_segments()
       },
     ],
     :redo => [ ],
-  }, "Checking the undo/redo logs after killing the redo buffer")
+  }, "undo6")
 
   title("Attempting a redo, which should fail")
   view.redo()
   segments = view.get_segments()
-  assert_equal(segments.length, 2, "Making sure there are still 2 segments")
-  assert_not_nil(segments['s1'], "The first segment is still present")
-  assert_not_nil(segments['deleteme'], "The new segment is still present")
+  assert_equal(segments.length, 2, "Checking that there are still two segments")
+  assert_hash(segments, {
+    's1' => {},
+    'deleteme' => {},
+  }, 'undo6.5')
 
   assert_hash(view.get_undo_log, {
     :undo => [
@@ -640,14 +716,14 @@ def test_segments()
       },
     ],
     :redo => [ ],
-  }, "Checking the undo/redo logs after killing the redo buffer")
+  }, "undo7")
 
   title("Attempting another undo, which should delete the new segment")
   view.undo()
   segments = view.get_segments()
-  assert_equal(segments.length, 1, "Making sure there are still 2 segments")
-  assert_not_nil(segments['s1'], "The first segment is still present")
-  assert_nil(segments['deleteme'], "The new segment is gone")
+  assert_equal(segments.length, 1, "Checking if there are still the right number of segments")
+  assert_not_nil(segments['s1'], "Checking if the first segment is still present")
+  assert_nil(segments['deleteme'], "Checking if the new segment was undone")
 
   assert_hash(view.get_undo_log, {
     :undo => [
@@ -670,14 +746,16 @@ def test_segments()
         :backward => { :type => 'method', :method => 'delete_segments', :params => 'deleteme' },
       },
     ],
-  }, "Checking the undo/redo logs after undoing the new segment")
+  }, "undo8")
 
   title("Attempting a redo, which should restore the new segment")
   view.redo()
   segments = view.get_segments()
-  assert_equal(segments.length, 2, "Making sure there are still 2 segments")
-  assert_not_nil(segments['s1'], "The first segment is still present")
-  assert_not_nil(segments['deleteme'], "The new segment is back")
+  assert_equal(segments.length, 2, "Checking if both segments are back")
+  assert_hash(segments, {
+    's1'       => {},
+    'deleteme' => {},
+  }, 'undo8.5')
 
   assert_hash(view.get_undo_log, {
     :undo => [
@@ -700,27 +778,27 @@ def test_segments()
     ],
     :redo => [
     ],
-  }, "Checking the undo/redo logs after re-doing the new segment")
+  }, "undo9")
 
   title("Attempting another undo, which should delete the new segment *AGAIN*")
   view.undo()
   segments = view.get_segments()
-  assert_equal(segments.length, 1, "Making sure we're back to one segment")
-  assert_not_nil(segments['s1'], "The first segment is still present")
-  assert_nil(segments['deleteme'], "The new segment is gone")
+  assert_equal(segments.length, 1, "Checking if there's one segment again")
+  assert_not_nil(segments['s1'], "Checking if the first segment is still present")
+  assert_nil(segments['deleteme'], "Checking if the new segment is gone again")
 
   title("Attempting a final undo, which should bring us back to the original state")
   view.undo()
   segments = view.get_segments()
-  assert_equal(segments.length, 0, "Making sure there are still 2 segments")
-  assert_nil(segments['s1'], "The first segment is gone")
-  assert_nil(segments['deleteme'], "The new segment is gone")
+  assert_equal(segments.length, 0, "Checking if all segments are gone")
 end
 
 def test_nodes()
-  title("Creating a brand new segment to test nodes in")
+  title("Testing creating / deleting / undoing / redoing nodes")
   view = View.find(@@view_id)
-  segment = view.new_segment('s2', 0x00000000, 0x00004000, "ABCDEFGH")
+  view.reset()
+
+  segment = view.new_segment('s2', 0x0000, 0x4000, "ABCDEFGH")
   assert_equal(segment.keys.length(), 1, "Checking if only the new segment exists")
   assert_not_nil(segment['s2'], "Checking that the segment was created")
 
@@ -728,209 +806,178 @@ def test_nodes()
   segment = view.get_segment('s2', :with_nodes => true, :with_data => true)
   assert_type(segment, Hash, "Checking if the segment was returned")
   assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_equal(segment[:nodes].length, 8, "Verifying that 8 nodes were returned")
-  assert_equal(segment[:nodes][0x00000000][:type], 'undefined', "Verifying that the nodes are all undefined")
-  assert_equal(segment[:nodes][0x00000001][:type], 'undefined', "Verifying that the nodes are all undefined")
-  assert_equal(segment[:nodes][0x00000002][:type], 'undefined', "Verifying that the nodes are all undefined")
-  assert_equal(segment[:nodes][0x00000003][:type], 'undefined', "Verifying that the nodes are all undefined")
-  assert_equal(segment[:nodes][0x00000004][:type], 'undefined', "Verifying that the nodes are all undefined")
-  assert_equal(segment[:nodes][0x00000005][:type], 'undefined', "Verifying that the nodes are all undefined")
-  assert_equal(segment[:nodes][0x00000006][:type], 'undefined', "Verifying that the nodes are all undefined")
-  assert_equal(segment[:nodes][0x00000007][:type], 'undefined', "Verifying that the nodes are all undefined")
+  assert_hash(segment[:nodes], {
+    0x0000 => { :address => 0x0000, :type => 'undefined' },
+    0x0001 => { :address => 0x0001, :type => 'undefined' },
+    0x0002 => { :address => 0x0002, :type => 'undefined' },
+    0x0003 => { :address => 0x0003, :type => 'undefined' },
+    0x0004 => { :address => 0x0004, :type => 'undefined' },
+    0x0005 => { :address => 0x0005, :type => 'undefined' },
+    0x0006 => { :address => 0x0006, :type => 'undefined' },
+    0x0007 => { :address => 0x0007, :type => 'undefined' },
+  }, 'nodes1', true)
 
   title("Creating a 32-bit node")
-  result = view.new_node('s2', 0x00000000, NODE0[:type], 4, NODE0[:value], { :test => '123', :test2 => 456 }, [0x00000004])
-  assert_type(result, Hash, "Checking if the new_node function returned properly")
-  assert_equal(result.keys.length, 1, "Verifying that only one segment was returned")
-  segment = result['s2']
-  assert_type(segment, Hash, "Checking if the segment was formatted properly")
-  assert_equal(segment[:nodes].length(), 2, "Verifying that two nodes were returned (the node with the new xref and the original node)")
+  result = view.new_node('s2', 0x0000, 'dword0', 4, 'value0', { :test => '123', :test2 => 456 }, [0x0004])
+  assert_hash(result, {
+    's2' => {
+      :nodes => {
+        0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => []       },
+        0x0004 => { :type => 'undefined', :refs => nil,      :xrefs => [0x0000] },
+      }
+    }
+  }, 'nodes2', true)
 
   title("Making sure there are exactly 5 nodes present")
   segment = view.get_segment('s2', :with_nodes => true, :with_data => true)
-  assert_type(segment, Hash, "Checking if the segment was returned")
-  assert_equal(segment[:nodes].length(), 5, "Checking if the correct number of nodes were returned")
   assert_hash(segment[:nodes], {
-    0x00000000 => NODE0,
-    0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
-    0x00000005 => { :type => 'undefined' },
-    0x00000006 => { :type => 'undefined' },
-    0x00000007 => { :type => 'undefined' },
-  }, "Checking if the five nodes were properly returned")
+    0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [] },
+    0x0004 => { :type => 'undefined', :refs => nil,      :xrefs => [0x0000] },
+    0x0005 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0006 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0007 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+  }, "nodes3", true)
 
   title("Creating a non-overlapping 32-bit node")
-  result = view.new_node('s2', 0x00000004, NODE4[:type], 4, NODE4[:value], { :test => 321, :test2 => '654' }, [0x00000000])
-
-  assert_type(result, Hash, "Checking if the new_node function returned properly")
-  assert_equal(result.keys.length, 1, "Verifying that one segment was returned")
+  result = view.new_node('s2', 0x0004, 'dword4', 4, 'value4', { :test => 321, :test2 => '654' }, [0x0000])
   segment = result['s2']
-  assert_equal(segment[:nodes].length(), 2, "Checking if the correct number of nodes were returned")
   assert_hash(segment[:nodes], {
-    0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
-    0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
-  }, "Checking if the nodes were properly returned")
+    0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [0x0004] },
+    0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [0x0000] },
+  }, "nodes4", true)
 
   title("Making sure both nodes are in good shape")
   segment = view.get_segment('s2', :with_nodes => true, :with_data => true)
-  assert_type(segment, Hash, "Checking if the segment was returned")
-  assert_equal(segment[:nodes].length(), 2, "Checking if the correct number of nodes were returned")
   assert_hash(segment[:nodes], {
-    0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
-    0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
-  }, "Checking if the nodes were properly returned")
+    0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [0x0004] },
+    0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [0x0000] },
+  }, "nodes5", true)
 
   title("Creating an overlapping 32-bit node")
-  result = view.new_node('s2', 0x00000002, NODE2[:type], 4, NODE2[:value], { :test => 321, :test2 => '654' }, [])
-  segment = result['s2']
-  assert_equal(segment[:nodes].length(), 5, "Checking if the correct number of nodes were returned")
-  assert_hash(segment[:nodes], {
-    0x00000000 => { :type => 'undefined' },
-    0x00000001 => { :type => 'undefined' },
-    0x00000002 => NODE2,
-    0x00000006 => { :type => 'undefined' },
-    0x00000007 => { :type => 'undefined' },
-  }, "Checking if the nodes were properly returned")
+  result = view.new_node('s2', 0x00000002, 'dword2', 4, 'value2', { :test => 321, :test2 => '654' }, [])
+  assert_hash(result['s2'][:nodes], {
+    # TODO: Undefined nodes shouldn't return nil for refs
+    0x0000 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0001 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0002 => { :type => 'dword2',    :refs => [],  :xrefs => [] },
+    0x0006 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0007 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+  }, "nodes6", true)
 
   title("Making sure it's still in good shape")
   segment = view.get_segment('s2', :with_nodes => true, :with_data => true)
-  assert_type(segment, Hash, "Checking if the segment was returned")
-  assert_type(segment[:nodes], Hash, "Checking if nodes are present")
-  assert_equal(segment[:nodes].length(), 5, "Checking if the correct number of nodes were returned")
   assert_hash(segment[:nodes], {
-    0x00000000 => { :type => 'undefined' },
-    0x00000001 => { :type => 'undefined' },
-    0x00000002 => NODE2,
-    0x00000006 => { :type => 'undefined' },
-    0x00000007 => { :type => 'undefined' },
-  }, "Checking if the nodes were properly returned")
+    0x0000 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0001 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0002 => { :type => 'dword2',    :refs => [],  :xrefs => [] },
+    0x0006 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0007 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+  }, "nodes7", true)
 
   title("Undoing the third node")
   result = view.undo(:with_nodes => true)
-  segment = result['s2']
-  assert_equal(segment[:nodes].length(), 2, "Checking if the correct number of nodes were returned")
-  assert_hash(segment[:nodes], {
-    0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
-    0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
-  }, "Checking if the nodes were properly returned")
+  assert_hash(result['s2'][:nodes], {
+    0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [0x0004] },
+    0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [0x0000] },
+  }, "nodes8", true)
 
   title("Undoing the second node")
   result = view.undo(:with_nodes => true)
-
-  segment = result['s2']
-  assert_equal(segment[:nodes].length(), 5, "Checking that the right number of nodes were returned")
-  assert_hash(segment[:nodes], {
-    0x00000000 => NODE0.merge({:xrefs => []}),
-    0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
-    0x00000005 => { :type => 'undefined' },
-    0x00000006 => { :type => 'undefined' },
-    0x00000007 => { :type => 'undefined' },
-  }, "Checking if the nodes were properly returned")
+  assert_hash(result['s2'][:nodes], {
+    0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [] },
+    0x0004 => { :type => 'undefined', :refs => nil,      :xrefs => [0x0000] },
+    0x0005 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0006 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0007 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+  }, "nodes9", true)
 
   segment = view.get_segment('s2', :with_nodes => true)
-  assert_equal(segment[:nodes].length(), 5, "Checking that the right number of nodes were returned")
-  assert_hash(segment[:nodes], {
-    0x00000000 => NODE0,
-    0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
-    0x00000005 => { :type => 'undefined' },
-    0x00000006 => { :type => 'undefined' },
-    0x00000007 => { :type => 'undefined' },
-  }, "Checking if the nodes were properly returned")
+  assert_hash(result['s2'][:nodes], {
+    0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [] },
+    0x0004 => { :type => 'undefined', :refs => nil,      :xrefs => [0x0000] },
+    0x0005 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0006 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0007 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+  }, "nodes10", true)
 
   title("Undoing the first node")
   result = view.undo(:with_nodes => true)
-  segment = result['s2']
-  assert_equal(segment[:nodes].length(), 5, "Checking that the right number of nodes were returned")
-  assert_hash(segment[:nodes], {
-    0x00000000 => { :type => 'undefined' },
-    0x00000001 => { :type => 'undefined' },
-    0x00000002 => { :type => 'undefined' },
-    0x00000003 => { :type => 'undefined' },
-    0x00000004 => { :type => 'undefined' },
-  }, "Checking if the nodes were properly returned")
+  assert_hash(result['s2'][:nodes], {
+    0x0000 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0001 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0002 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0003 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0004 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+  }, "nodes11", true)
 
   segment = view.get_segment('s2', :with_nodes => true)
-  assert_equal(segment[:nodes].length(), 8, "Checking that the right number of nodes were returned")
   assert_hash(segment[:nodes], {
-    0x00000000 => { :type => 'undefined' },
-    0x00000001 => { :type => 'undefined' },
-    0x00000002 => { :type => 'undefined' },
-    0x00000003 => { :type => 'undefined' },
-    0x00000004 => { :type => 'undefined' },
-    0x00000005 => { :type => 'undefined' },
-    0x00000006 => { :type => 'undefined' },
-    0x00000007 => { :type => 'undefined' },
-  }, "Checking if the nodes were properly returned")
+    0x0000 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0001 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0002 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0003 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0004 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0005 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0006 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0007 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+  }, "nodes12", true)
 
   title("Redo: creating the first 32-bit node")
   result = view.redo(:with_nodes => true)
-  assert_type(result, Hash, "Checking if the new_node function returned properly")
-  assert_equal(result.keys.length, 1, "Verifying that only one segment was returned")
-  segment = result['s2']
-  assert_equal(segment[:nodes].length(), 2, "Verifying that two nodes were returned (the node with the new xref and the original node)")
-  assert_hash(segment[:nodes], {
-    0x00000000 => NODE0,
-    0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
-  }, "Checking if the nodes were properly returned")
+  assert_hash(result['s2'][:nodes], {
+    0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [] },
+    0x0004 => { :type => 'undefined', :refs => nil,      :xrefs => [0x0000] },
+  }, "nodes13", true)
 
   title("Making sure there are exactly 5 nodes present")
   segment = view.get_segment('s2', :with_nodes => true, :with_data => true)
-  assert_type(segment, Hash, "Checking if the segment was returned")
-  assert_equal(segment[:nodes].length(), 5, "Checking that the right number of nodes were returned")
   assert_hash(segment[:nodes], {
-    0x00000000 => NODE0,
-    0x00000004 => { :type => 'undefined', :xrefs => [0x00000000] },
-    0x00000005 => { :type => 'undefined' },
-    0x00000006 => { :type => 'undefined' },
-    0x00000007 => { :type => 'undefined' },
-  }, "Checking if the nodes were properly returned")
+    0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [] },
+    0x0004 => { :type => 'undefined', :refs => nil,      :xrefs => [0x0000] },
+    0x0005 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0006 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+    0x0007 => { :type => 'undefined', :refs => nil,      :xrefs => [] },
+  }, "nodes14", true)
 
   title("Redo: creating a non-overlapping 32-bit node")
   result = view.redo(:with_data => true)
-
-  assert_type(result, Hash, "Checking if the new_node function returned properly")
-  assert_equal(result.keys.length, 1, "Verifying that one segment was returned")
-  segment = result['s2']
-  assert_equal(segment[:nodes].length(), 2, "Checking that the right number of nodes were returned")
-  assert_hash(segment[:nodes], {
-    0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
-    0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
-  }, "Checking if the nodes were properly returned")
+  assert_hash(result['s2'][:nodes], {
+    0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [0x0004] },
+    0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [0x0000] },
+  }, "nodes15", true)
 
   title("Making sure both nodes are in good shape")
   segment = view.get_segment('s2', :with_nodes => true, :with_data => true)
-  assert_equal(segment[:nodes].length(), 2, "Checking that the right number of nodes were returned")
   assert_hash(segment[:nodes], {
-    0x00000000 => NODE0.merge({:xrefs => [0x00000004]}),
-    0x00000004 => NODE4.merge({:xrefs => [0x00000000]}),
-  }, "Checking if the nodes were properly returned")
+    0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [0x0004] },
+    0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [0x0000] },
+  }, "nodes16", true)
 
   title("Redo: creating an overlapping 32-bit node")
   result = view.redo(:with_data => true)
-  segment = result['s2']
-  assert_equal(segment[:nodes].length(), 5, "Checking that the right number of nodes were returned")
-  assert_hash(segment[:nodes], {
-    0x00000000 => { :type => 'undefined'},
-    0x00000001 => { :type => 'undefined'},
-    0x00000002 => NODE2,
-    0x00000006 => { :type => 'undefined'},
-    0x00000007 => { :type => 'undefined'},
-  }, "Checking if the nodes were properly returned")
+  assert_hash(result['s2'][:nodes], {
+    0x0000 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0001 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0002 => { :type => 'dword2',    :refs => [],  :xrefs => [] },
+    0x0006 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0007 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+  }, "nodes17", true)
 
   title("Making sure it's still in good shape")
   segment = view.get_segment('s2', :with_nodes => true, :with_data => true)
-  assert_equal(segment[:nodes].length(), 5, "Checking that the right number of nodes were returned")
   assert_hash(segment[:nodes], {
-    0x00000000 => { :type => 'undefined'},
-    0x00000001 => { :type => 'undefined'},
-    0x00000002 => NODE2,
-    0x00000006 => { :type => 'undefined'},
-    0x00000007 => { :type => 'undefined'},
-  }, "Checking if the nodes were properly returned")
+    0x0000 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0001 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0002 => { :type => 'dword2',    :refs => [],  :xrefs => [] },
+    0x0006 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+    0x0007 => { :type => 'undefined', :refs => nil, :xrefs => [] },
+  }, "nodes18", true)
 end
 
 def test_create_multiple_segments()
   title("Creating 4 segments at once")
   view = View.find(@@view_id)
+  view.reset()
 
   result = view.new_segments({
     'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, },
@@ -938,13 +985,12 @@ def test_create_multiple_segments()
     'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, },
     'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, },
   })
-  assert_equal(result.length, 4, "Checking that the right number of segments were returned")
   assert_hash(result, {
     'A' => { :address => 0,  :file_address => 0 },
     'B' => { :address => 16, :file_address => 1 },
     'C' => { :address => 32, :file_address => 2 },
     'D' => { :address => 48, :file_address => 3 },
-  }, "Checking that the segments were created")
+  }, "create_multiple_segments_1", true)
 
   result = view.undo()
 
@@ -956,19 +1002,22 @@ def test_create_multiple_segments()
     'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, },
     'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, },
   }, :with_data => true, :with_nodes => true)
-
-  assert_equal(result.length, 4, "Checking that the right number of segments were returned")
   assert_hash(result, {
     'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, :nodes => { 0  => {:type => 'undefined'}}, },
     'B' => { :address => 16, :file_address => 1, :data => 'B' * 16, :nodes => { 16 => {:type => 'undefined'}}, },
     'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, :nodes => { 32 => {:type => 'undefined'}}, },
     'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, :nodes => { 48 => {:type => 'undefined'}}, },
-  }, "Checking that the segments were created")
+  }, "create_multiple_segments_2", true)
 
   # Go back to a clean slate
   result = view.undo()
+end
 
-  title("Creating nodes using an array")
+def test_create_multiple_nodes()
+  title("Creating 4 nodes at once")
+  view = View.find(@@view_id)
+  view.reset()
+
   segment = view.new_segment('A', 0x1000, 0x0000, "1111222233334444")
   assert_type(segment, Hash, "Checking if the segment returned properly")
   result = view.new_nodes('A', [
@@ -1016,6 +1065,8 @@ end
 def test_xrefs()
   title("Testing cross-references")
   view = View.find(@@view_id)
+  view.reset()
+
   segment = view.new_segment('X', 0x0, 0x0, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
   assert_type(segment, Hash, "Checking if the segment returned properly")
 
@@ -1026,7 +1077,6 @@ def test_xrefs()
     {:address => 12, :type => 'defined', :length => 4, :value => 'References 0 and 16',     :refs => [0, 16]},
   ])
 
-  assert_equal(result['X'][:nodes].length, 5, "xrefs1_length")
   assert_hash(result['X'][:nodes], {
     0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 8, 12]},
     4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [0, 4, 8]},
@@ -1039,16 +1089,14 @@ def test_xrefs()
   result = view.new_nodes('X', [
     {:address => 0x0010, :type => 'defined', :length => 4, :value => 'References 0 and 12', :refs => [0, 12]},
   ])
-  assert_equal(result['X'][:nodes].length, 3, "xrefs2_length")
   assert_hash(result['X'][:nodes], {
     0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 8, 12, 16]},
     12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [8, 16]},
     16 => {:type => 'defined',   :refs => [0, 12],        :xrefs => [12]},
-  }, "xrefs2")
+  }, "xrefs2", true)
 
   title("Deleting a node")
   result = view.delete_nodes('X', [0x0008])
-  assert_equal(result['X'][:nodes].length, 7, "xrefs3_length")
   assert_hash(result['X'][:nodes], {
     0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 12, 16]},
     4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [0, 4]},
@@ -1057,11 +1105,10 @@ def test_xrefs()
     10 => {:type => 'undefined', :refs => nil,            :xrefs => []},
     11 => {:type => 'undefined', :refs => nil,            :xrefs => []},
     12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [16]},
-  }, "xrefs3")
+  }, "xrefs3", true)
 
   title("Deleting another node")
   result = view.delete_nodes('X', [16])
-  assert_equal(result['X'][:nodes].length, 6, "xrefs4_length")
   assert_hash(result['X'][:nodes], {
     0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 12]},
     12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => []},
@@ -1069,20 +1116,18 @@ def test_xrefs()
     17 => {:type => 'undefined', :refs => nil,            :xrefs => []},
     18 => {:type => 'undefined', :refs => nil,            :xrefs => []},
     19 => {:type => 'undefined', :refs => nil,            :xrefs => []},
-  }, "xrefs4")
+  }, "xrefs4", true)
 
   title("Undoing the delete")
   result = view.undo()
-  assert_equal(result['X'][:nodes].length, 3, "xrefs5_length")
   assert_hash(result['X'][:nodes], {
     0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 12, 16]},
     12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [16]},
     16 => {:type => 'defined',   :refs => [0, 12],        :xrefs => [12]},
-  }, "xrefs5")
+  }, "xrefs5", true)
 
   title("Re-doing the delete")
   result = view.redo()
-  assert_equal(result['X'][:nodes].length, 6, "xrefs6_length")
   assert_hash(result['X'][:nodes], {
     0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 12]},
     12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => []},
@@ -1090,24 +1135,22 @@ def test_xrefs()
     17 => {:type => 'undefined', :refs => nil,            :xrefs => []},
     18 => {:type => 'undefined', :refs => nil,            :xrefs => []},
     19 => {:type => 'undefined', :refs => nil,            :xrefs => []},
-  }, "xrefs6")
+  }, "xrefs6", true)
 
   title("Creating another xrefs node that has xrefs on uneven boundaries")
   result = view.new_nodes('X', [
     {:address => 20, :type => 'defined', :length => 4, :value => 'References 2, 4, 10, and 12', :refs => [2, 4, 10, 12]},
   ])
-  assert_equal(result['X'][:nodes].length, 5, "xrefs7_length")
   assert_hash(result['X'][:nodes], {
     0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [4, 12, 20]},
     4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [0, 4, 20]},
     10 => {:type => 'undefined', :refs => nil,            :xrefs => [20]},
     12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [20]},
     20 => {:type => 'defined',   :refs => [2, 4, 10, 12], :xrefs => []},
-  }, "xrefs7")
+  }, "xrefs7", true)
 
   title("Deleting a node that has a xref in the middle")
   result = view.delete_nodes('X', [0x0000])
-  assert_equal(result['X'][:nodes].length, 6, "xrefs8_length")
   assert_hash(result['X'][:nodes], {
     0  => {:type => 'undefined', :refs => nil,            :xrefs => [4, 12]},
     1  => {:type => 'undefined', :refs => nil,            :xrefs => []},
@@ -1116,19 +1159,18 @@ def test_xrefs()
 
     4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [4, 20]},
     8  => {:type => 'undefined', :refs => nil,            :xrefs => []},
-  }, "xrefs8")
+  }, "xrefs8", true)
 
   title("Re-creating a node that covers a now-undefined node")
   result = view.new_nodes('X', [
     {:address => 8, :type => 'defined', :length => 4, :value => 'References 0, 4, 8, and 12', :refs => [0, 4, 8, 12]},
   ])
-  assert_equal(result['X'][:nodes].length, 4, "xrefs9_length")
   assert_hash(result['X'][:nodes], {
     0  => {:type => 'undefined', :refs => nil,            :xrefs => [4, 8, 12]},
     4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [4, 8, 20]},
     8  => {:type => 'defined',   :refs => [0, 4, 8, 12],  :xrefs => [8, 20]},
     12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [8, 20]},
-  }, "xrefs9")
+  }, "xrefs9", true)
 
   title("Deleting the segment")
   result = view.delete_segment('X')
@@ -1136,7 +1178,6 @@ def test_xrefs()
 
   title("Undoing segment delete")
   result = view.undo()
-  assert_equal(result['X'][:nodes].length, 14, "xrefs10")
   assert_hash(result['X'][:nodes], {
     0  => {:type => 'undefined', :refs => nil,            :xrefs => [4, 8, 12]},
     1  => {:type => 'undefined', :refs => nil,            :xrefs => []},
@@ -1152,31 +1193,35 @@ def test_xrefs()
     20 => {:type => 'defined',   :refs => [2, 4, 10, 12], :xrefs => []},
     24 => {:type => 'undefined', :refs => nil,            :xrefs => []},
     25 => {:type => 'undefined', :refs => nil,            :xrefs => []},
-  }, "xrefs10")
+  }, "xrefs10", true)
 
   title("Re-doing segment delete")
   result = view.redo()
   assert_equal(result, {}, "Checking if the segment was deleted")
 end
 
-  # TODO: Locking the revision and making sure the right stuff shows up
-
 begin
   test_create_binary() # Mandatory (sets @@binary_id)
   test_get_all_binaries()
   test_find_binary()
   test_save_binary()
+
   test_create_workspace() # Mandatory (sets @@workspace_id)
   test_get_all_workspaces()
   test_find_workspace()
   test_save_workspace()
+
   test_create_view() # Mandatory (sets @@view_id)
   test_get_all_views()
   test_find_view()
   test_update_view()
-  test_segments()
+  test_create_segment()
+  test_delete_segment()
+  test_find_segments()
+  test_undo()
   test_nodes()
   test_create_multiple_segments()
+  test_create_multiple_nodes()
   test_xrefs()
 
   puts("ALL DONE! EVERYTHING IS GOOD!!!")
@@ -1211,7 +1256,7 @@ ensure
 
   begin
     title("Deleting workspace")
-    if(!workspace_id.nil?)
+    if(!@@workspace_id.nil?)
       result = Workspace.find(@@workspace_id).delete()
       assert_not_nil(result, "Checking if delete() returned")
       assert_type(result.o, Hash, "Checking if delete() returned a hash")

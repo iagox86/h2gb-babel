@@ -96,6 +96,7 @@ class View < Model
     return post_stuff('/views/:view_id/redo', params.merge({:view_id => self.o[:view_id]})).o[:segments]
   end
 
+  # TODO: Add a free-form details field to segments
   def new_segment(name, address, file_address, data, params = {})
     result = post_stuff("/views/:view_id/new_segments", {
       :view_id      => self.o[:view_id],
@@ -123,18 +124,24 @@ class View < Model
     return result
   end
 
-  def delete_segment(name)
+  def delete_segment(name, params = {})
     return post_stuff("/views/:view_id/delete_segments", {
       :view_id  => self.o[:view_id],
       :segments => [name],
-    }).o[:segments]
+    }.merge(params)).o[:segments]
   end
 
-  def delete_segments(names)
+  def delete_all_segments(params = {})
+    return post_stuff("/views/:view_id/delete_all_segments", {
+      :view_id  => self.o[:view_id],
+    }.merge(params)).o[:segments]
+  end
+
+  def delete_segments(names, params = {})
     return post_stuff("/views/:view_id/delete_segments", {
       :view_id  => self.o[:view_id],
       :segments => names,
-    }).o[:segments]
+    }.merge(params)).o[:segments]
   end
 
   def new_node(segment, address, type, length, value, details, references, params = {})
@@ -202,6 +209,18 @@ class View < Model
     return get_stuff("/views/:view_id/debug/undo_log", {
       :view_id => self.o[:view_id]
     }.merge(params)).o
+  end
+
+  def clear_undo_log(params = {})
+    return post_stuff("/views/:view_id/clear_undo_log", {
+      :view_id => self.o[:view_id]
+    }.merge(params)).o
+  end
+
+  # Mostly for testing, so I can get the view into a clean state
+  def reset()
+    delete_all_segments()
+    clear_undo_log()
   end
 
   def print()
