@@ -8,12 +8,26 @@ require 'models/workspace'
 
 require 'pp' # TODO: Debug
 
-binary_id    = nil
-workspace_id = nil
-view_id      = nil
-
 @@pass = 0
 @@fail = 0
+
+@@binary_id = nil
+@@workspace_id = nil
+@@view_id = nil
+
+# Some constants
+NODE0 = {
+  :type => "dword0",
+  :value => "db 41414141 [I'm at 0x00000000]"
+}
+NODE4 = {
+  :type => "dword4",
+  :value => "db 42424242 [I'm at 0x00000004]"
+}
+NODE2 = {
+  :type => "dword2",
+  :value => "db 43434343 [I'm at 0x00000002]"
+}
 
 def assert(boolean, test, pass = nil, fail = nil)
   if(boolean)
@@ -100,7 +114,7 @@ def title(msg)
   puts("** #{msg.upcase()} **")
 end
 
-begin
+def test_create_binary()
   ######## BINARY
   title("Testing binary creation")
 
@@ -118,13 +132,15 @@ begin
   assert_equal(binary.o[:comment], "Test binary", "Checking if the binary's comment is correct")
   assert_nil(binary.o[:data], "Checking that the binary's data wasn't returned")
 
-  binary_id = binary.o[:binary_id]
+  @@binary_id = binary.o[:binary_id]
+end
 
+def test_get_all_binaries()
   title("Testing retrieving all binaries (with data)")
   all_binaries = Binary.all(:with_data => true)
   good = false
   all_binaries.o[:binaries].each do |b|
-    if(b[:binary_id] == binary_id)
+    if(b[:binary_id] == @@binary_id)
       good = true
 
       assert(true, "Checking if our binary is present")
@@ -139,7 +155,7 @@ begin
   all_binaries = Binary.all(:with_data => false)
   good = false
   all_binaries.o[:binaries].each do |b|
-    if(b[:binary_id] == binary_id)
+    if(b[:binary_id] == @@binary_id)
       good = true
 
       assert(true, "Checking if our binary is present")
@@ -149,58 +165,68 @@ begin
     end
   end
   assert(good, "Checking if our binary is present")
+end
 
+def test_find_binary()
   title("Testing searching for a binary (no data)")
-  binary_again = Binary.find(binary_id)
+  binary = Binary.find(@@binary_id)
 
-  assert_not_nil(binary_again, "The binary is successfully found")
-  assert_not_nil(binary_again.o, "The binary's object is returned")
-  assert_type(binary_again.o, Hash, "The binary's object is a hash")
-  assert_equal(binary_again.o[:binary_id],binary.o[:binary_id], "The binary's id value matches the original binary's")
-  assert_equal(binary_again.o[:name],     binary.o[:name], "The binary's name maches the original binary's")
-  assert_equal(binary_again.o[:comment],  binary.o[:comment], "The binary's comment maches the original binary's")
-  assert_nil(binary_again.o[:data], "Checking that no data was returned when it wasn't requested")
+  assert_not_nil(binary, "The binary is successfully found")
+  assert_not_nil(binary.o, "The binary's object is returned")
+  assert_hash(binary.o, {
+    :binary_id => @@binary_id,
+    :name      => "Binary Test",
+    :comment   => "Test binary",
+    :data      => nil
+  }, "binary_find_1")
 
   title("Testing searching for a binary (with data)")
-  binary_again = Binary.find(binary_id, :with_data => true)
+  binary = Binary.find(@@binary_id, :with_data => true)
 
-  assert_not_nil(binary_again, "The binary is successfully found")
-  assert_not_nil(binary_again.o, "The binary's object is returned")
-  assert_type(binary_again.o, Hash, "The binary's object is a hash")
-  assert_equal(binary_again.o[:binary_id],binary.o[:binary_id], "The binary's id value matches the original binary's")
-  assert_equal(binary_again.o[:name],     binary.o[:name], "The binary's name maches the original binary's")
-  assert_equal(binary_again.o[:comment],  binary.o[:comment], "The binary's comment maches the original binary's")
-  assert_equal(binary_again.o[:data], "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "Checking if the binary's data is correct")
+  assert_not_nil(binary, "The binary is successfully found")
+  assert_not_nil(binary.o, "The binary's object is returned")
+  assert_not_nil(binary.o, "The binary's object is returned")
+  assert_hash(binary.o, {
+    :binary_id => @@binary_id,
+    :name      => "Binary Test",
+    :comment   => "Test binary",
+    :data      => "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  }, "binary_find_2")
+end
 
+def test_save_binary()
   title("Testing saving the binary")
+  binary = Binary.find(@@binary_id, :with_data => false)
   binary.o[:name] = "new binary name"
   binary.o[:comment] = "updated comment"
-  saved = binary.save()
+  saved = binary.save(:with_data => true)
 
   assert_not_nil(saved, "A binary is successfully saved")
-  assert_not_nil(saved.o, "The binary's object is returned")
-  assert_type(saved.o, Hash, "The binary's object is a hash")
-  assert_equal(saved.o[:binary_id],binary.o[:binary_id], "The binary's id value matches the original binary's")
-  assert_equal(saved.o[:name],     "new binary name", "The binary's name was properly updated")
-  assert_equal(saved.o[:comment],  "updated comment", "The binary's comment was properly updated")
-  assert_equal(saved.o[:data],     binary.o[:data], "The binary's data maches the original binary's")
+  assert_hash(saved.o, {
+    :binary_id => @@binary_id,
+    :name      => "new binary name",
+    :comment   => "updated comment",
+    :data      => "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  }, "test_save_binary_1")
 
   title("Verifying the update by re-fetching the record")
 
-  loaded = Binary.find(binary_id)
+  loaded = Binary.find(@@binary_id, :with_data => true)
   assert_not_nil(loaded, "A binary is successfully saved")
-  assert_not_nil(loaded.o, "The binary's object is returned")
-  assert_type(loaded.o, Hash, "The binary's object is a hash")
-  assert_equal(loaded.o[:binary_id],binary.o[:binary_id], "The binary's id value matches the original binary's")
-  assert_equal(loaded.o[:name],     "new binary name", "The binary's name was properly updated")
-  assert_equal(loaded.o[:comment],  "updated comment", "The binary's comment was properly updated")
-  assert_equal(loaded.o[:data],     binary.o[:data], "The binary's data maches the original binary's")
+  assert_hash(loaded.o, {
+    :binary_id => @@binary_id,
+    :name      => "new binary name",
+    :comment   => "updated comment",
+    :data      => "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  }, "test_save_binary_1")
+end
 
   ######## WORKSPACE
 
+def test_create_workspace()
   title("Create a workspace")
   workspace = Workspace.create(
-    :binary_id => binary_id,
+    :binary_id => @@binary_id,
     :name => "test workspace"
   )
 
@@ -210,64 +236,57 @@ begin
   assert_type(workspace.o[:workspace_id], Fixnum, "The workspace's id value is present and numeric")
   assert_equal(workspace.o[:name], "test workspace", "The workspace's name is right")
 
-  workspace_id = workspace.o[:workspace_id]
+  @@workspace_id = workspace.o[:workspace_id]
+end
 
+def test_get_all_workspaces()
   title("Testing retrieving all workspaces")
-  all_workspaces = Workspace.all(:binary_id => binary_id)
+  all_workspaces = Workspace.all(:binary_id => @@binary_id)
 
-  good = false
   assert_equal(all_workspaces.o[:workspaces].length(), 1, "Making sure the new binary only has one workspace")
-  assert_equal(all_workspaces.o[:workspaces][0][:workspace_id], workspace_id, "Making sure the id of the retrieved workspace is right")
-  assert_equal(all_workspaces.o[:workspaces][0][:binary_id], binary_id, "Making sure the workspace belongs to the correct binary")
+  assert_equal(all_workspaces.o[:workspaces][0][:workspace_id], @@workspace_id, "Making sure the id of the retrieved workspace is right")
+  assert_equal(all_workspaces.o[:workspaces][0][:binary_id], @@binary_id, "Making sure the workspace belongs to the correct binary")
+end
 
+def test_find_workspace()
   title("Finding the workspace")
-  new_workspace = Workspace.find(workspace_id)
+  new_workspace = Workspace.find(@@workspace_id)
   assert_not_nil(new_workspace, "A workspace is successfully found")
   assert_not_nil(new_workspace.o, "The workspace's object is returned")
   assert_type(new_workspace.o, Hash, "The workspace's object is a hash")
-  assert_equal(new_workspace.o[:workspace_id], workspace_id, "The workspace's id matches the created workspace")
-  assert_equal(new_workspace.o[:name], workspace.o[:name], "The workspace's name matches the created workspace")
+  assert_equal(new_workspace.o[:workspace_id], @@workspace_id, "The workspace's id matches the created workspace")
+  assert_equal(new_workspace.o[:name], "test workspace", "The workspace's name matches the created workspace")
+end
 
+def test_save_workspace()
   title("Updating the workspace")
 
+  workspace = Workspace.find(@@workspace_id)
   workspace.o[:name] = 'new name!?'
   updated = workspace.save()
 
   assert_not_nil(updated, "A workspace is successfully updated")
   assert_not_nil(updated.o, "The workspace's object is returned")
   assert_type(updated.o, Hash, "The workspace's object is a hash")
-  assert_equal(updated.o[:workspace_id], workspace_id, "The workspace's id matches the created workspace")
+  assert_equal(updated.o[:workspace_id], @@workspace_id, "The workspace's id matches the created workspace")
   assert_equal(updated.o[:name], workspace.o[:name], "The workspace's name was updated properly")
 
   title("Doing another search for the updated workspace, just to be sure")
 
-  updated = Workspace.find(workspace_id)
+  updated = Workspace.find(@@workspace_id)
 
   assert_not_nil(updated, "A workspace is successfully updated")
   assert_not_nil(updated.o, "The workspace's object is returned")
   assert_type(updated.o, Hash, "The workspace's object is a hash")
-  assert_equal(updated.o[:workspace_id], workspace_id, "The workspace's id matches the created workspace")
+  assert_equal(updated.o[:workspace_id], @@workspace_id, "The workspace's id matches the created workspace")
   assert_equal(updated.o[:name], workspace.o[:name], "The workspace's name was updated properly")
+end
 
+def test_create_view()
   ######## VIEW
-
-  # Some constants
-  NODE0 = {
-    :type => "dword0",
-    :value => "db 41414141 [I'm at 0x00000000]"
-  }
-  NODE4 = {
-    :type => "dword4",
-    :value => "db 42424242 [I'm at 0x00000004]"
-  }
-  NODE2 = {
-    :type => "dword2",
-    :value => "db 43434343 [I'm at 0x00000002]"
-  }
-
   title("Create a view")
   view = View.create(
-    :workspace_id => workspace_id,
+    :workspace_id => @@workspace_id,
     :name => "test view"
   )
 
@@ -279,50 +298,59 @@ begin
   assert_nil(view.o[:segments], "No segments were returned")
   assert_revision(view.o[:revision], "The first revision")
 
-  view_id = view.o[:view_id]
+  @@view_id = view.o[:view_id]
+end
 
+def test_get_all_views()
   title("Testing retrieving all views")
-  all_views = View.all(:workspace_id => workspace_id)
+  all_views = View.all(:workspace_id => @@workspace_id)
 
-  good = false
   assert_equal(all_views.o[:views].length(), 1, "Making sure the new workspace only has one view")
-  assert_equal(all_views.o[:views][0][:view_id], view_id, "Making sure the id of the retrieved view is right")
-  assert_equal(all_views.o[:views][0][:workspace_id], workspace_id, "Making sure the view belongs to the correct workspace")
+  assert_equal(all_views.o[:views][0][:view_id], @@view_id, "Making sure the id of the retrieved view is right")
+  assert_equal(all_views.o[:views][0][:workspace_id], @@workspace_id, "Making sure the view belongs to the correct workspace")
   assert_equal(all_views.o[:views][0][:revision], 1, "The revision hasn't changed")
+end
 
+def test_find_view()
   title("Finding the view")
-  new_view = View.find(view_id)
+  new_view = View.find(@@view_id)
   assert_not_nil(new_view, "A view is successfully found")
   assert_not_nil(new_view.o, "The view's object is returned")
   assert_type(new_view.o, Hash, "The view's object is a hash")
-  assert_equal(new_view.o[:view_id], view_id, "The view's id matches the created view")
-  assert_equal(new_view.o[:name], view.o[:name], "The view's name matches the created view")
+  assert_equal(new_view.o[:view_id], @@view_id, "The view's id matches the created view")
+  assert_equal(new_view.o[:name], "test view", "The view's name matches the created view")
   assert_nil(new_view.o[:segments], "No segments were returned")
+end
 
+def test_update_view()
   title("Updating the view")
 
+  view = View.find(@@view_id)
   view.o[:name] = 'new name!?'
   updated = view.save()
 
   assert_not_nil(updated, "A view is successfully updated")
   assert_not_nil(updated.o, "The view's object is returned")
   assert_type(updated.o, Hash, "The view's object is a hash")
-  assert_equal(updated.o[:view_id], view_id, "The view's id matches the created view")
+  assert_equal(updated.o[:view_id], @@view_id, "The view's id matches the created view")
   assert_equal(updated.o[:name], view.o[:name], "The view's name was updated properly")
   assert_nil(updated.o[:segments], "No segments were returned")
 
   title("Doing another search for the updated view, just to be sure")
 
-  updated = View.find(view_id)
+  updated = View.find(@@view_id)
 
   assert_not_nil(updated, "A view is successfully updated")
   assert_not_nil(updated.o, "The view's object is returned")
   assert_type(updated.o, Hash, "The view's object is a hash")
-  assert_equal(updated.o[:view_id], view_id, "The view's id matches the created view")
+  assert_equal(updated.o[:view_id], @@view_id, "The view's id matches the created view")
   assert_equal(updated.o[:name], view.o[:name], "The view's name was updated properly")
   assert_nil(updated.o[:segments], "No segments were returned")
+end
 
+def test_segments()
   title("Create segment")
+  view = View.find(@@view_id)
   segments = view.new_segment('s1', 0x00000000, 0x00004000, "AAAAAAAA")
   assert_type(segments, Hash, "The segment was created")
   assert_equal(segments.keys.length(), 1, "Only one segment was returned")
@@ -406,7 +434,8 @@ begin
 
   title("Find all segments")
   segments = view.get_segments()
-  assert_equal(view.get_segments().length(), 1, "Checking if getting all segments returns exactly one segment")
+  assert_equal(segments.length(), 1, "Checking if getting all segments returns exactly one segment")
+  assert_not_nil(segments['s1'], "Checking if the correct segment was returned")
 
   title("Deleting the segment")
   view.delete_segment('s1')
@@ -558,6 +587,7 @@ begin
 
   title("Creating a segment to hopefully kill the redo buffer")
   new_view = view.new_segment("deleteme", 0x00000000, 0x00004000, "ABCDEFGH")
+  assert_type(new_view, Hash, "Checking if the new view returned properly")
   segments = view.get_segments()
   assert_equal(segments.length, 2, "Making sure there are now 2 segments")
 
@@ -685,8 +715,11 @@ begin
   assert_equal(segments.length, 0, "Making sure there are still 2 segments")
   assert_nil(segments['s1'], "The first segment is gone")
   assert_nil(segments['deleteme'], "The new segment is gone")
+end
 
+def test_nodes()
   title("Creating a brand new segment to test nodes in")
+  view = View.find(@@view_id)
   segment = view.new_segment('s2', 0x00000000, 0x00004000, "ABCDEFGH")
   assert_equal(segment.keys.length(), 1, "Checking if only the new segment exists")
   assert_not_nil(segment['s2'], "Checking that the segment was created")
@@ -893,8 +926,12 @@ begin
     0x00000006 => { :type => 'undefined'},
     0x00000007 => { :type => 'undefined'},
   }, "Checking if the nodes were properly returned")
+end
 
+def test_create_multiple_segments()
   title("Creating 4 segments at once")
+  view = View.find(@@view_id)
+
   result = view.new_segments({
     'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, },
     'B' => { :address => 16, :file_address => 1, :data => 'B' * 16, },
@@ -933,6 +970,7 @@ begin
 
   title("Creating nodes using an array")
   segment = view.new_segment('A', 0x1000, 0x0000, "1111222233334444")
+  assert_type(segment, Hash, "Checking if the segment returned properly")
   result = view.new_nodes('A', [
     {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :refs => []},
     {:address => 0x1004, :type => 'defined', :length => 4, :value => 'BBBB', :refs => []},
@@ -973,9 +1011,13 @@ begin
       0x100c => {:address => 0x100c, :type => 'defined', :length => 4, :value => 'DDDD', :raw => '4444', :refs => []},
     }
   }, 'delete_nodes_again')
+end
 
+def test_xrefs()
   title("Testing cross-references")
+  view = View.find(@@view_id)
   segment = view.new_segment('X', 0x0, 0x0, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+  assert_type(segment, Hash, "Checking if the segment returned properly")
 
   result = view.new_nodes('X', [
     {:address => 0,  :type => 'defined', :length => 4, :value => 'References 4 and 8',      :refs => [4, 8]},
@@ -1115,8 +1157,27 @@ begin
   title("Re-doing segment delete")
   result = view.redo()
   assert_equal(result, {}, "Checking if the segment was deleted")
+end
 
   # TODO: Locking the revision and making sure the right stuff shows up
+
+begin
+  test_create_binary() # Mandatory (sets @@binary_id)
+  test_get_all_binaries()
+  test_find_binary()
+  test_save_binary()
+  test_create_workspace() # Mandatory (sets @@workspace_id)
+  test_get_all_workspaces()
+  test_find_workspace()
+  test_save_workspace()
+  test_create_view() # Mandatory (sets @@view_id)
+  test_get_all_views()
+  test_find_view()
+  test_update_view()
+  test_segments()
+  test_nodes()
+  test_create_multiple_segments()
+  test_xrefs()
 
   puts("ALL DONE! EVERYTHING IS GOOD!!!")
 rescue Exception => e
@@ -1135,9 +1196,9 @@ ensure
   puts()
 
   begin
-    if(!view_id.nil?)
+    if(!@@view_id.nil?)
       title("Deleting view")
-      result = View.find(view_id).delete()
+      result = View.find(@@view_id).delete()
       assert_not_nil(result, "Checking if delete() returned")
       assert_type(result.o, Hash, "Checking if delete() returned a hash")
       assert_equal(result.o[:deleted], true, "Checking if delete() returned successfully")
@@ -1151,7 +1212,7 @@ ensure
   begin
     title("Deleting workspace")
     if(!workspace_id.nil?)
-      result = Workspace.find(workspace_id).delete()
+      result = Workspace.find(@@workspace_id).delete()
       assert_not_nil(result, "Checking if delete() returned")
       assert_type(result.o, Hash, "Checking if delete() returned a hash")
       assert_equal(result.o[:deleted], true, "Checking if delete() returned successfully")
@@ -1164,8 +1225,8 @@ ensure
 
   begin
     title("Deleting binary")
-    if(!binary_id.nil?)
-      result = Binary.find(binary_id).delete()
+    if(!@@binary_id.nil?)
+      result = Binary.find(@@binary_id).delete()
       assert_not_nil(result, "Checking if delete() returned")
       assert_type(result.o, Hash, "Checking if delete() returned a hash")
       assert_equal(result.o[:deleted], true, "Checking if delete() returned successfully")
