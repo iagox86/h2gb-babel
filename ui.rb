@@ -57,8 +57,12 @@ class Ui
     }
   end
 
-  def register_command(name, parser, proc)
+  def register_command(name, parser)
     result = @commands.delete(name)
+
+    if(parser.is_a?(String))
+      parser = Trollop::Parser.new do banner(parser) end
+    end
 
     @commands[name] = {
       :parser => parser,
@@ -134,5 +138,9 @@ class Ui
       $stderr.puts("")
       $stderr.puts(e.backtrace)
     end
+  end
+
+  def set_prompt(prompt)
+    @prompt = prompt
   end
 end

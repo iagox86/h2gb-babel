@@ -15,16 +15,10 @@ HOST = ARGV[0] || "http://localhost:9292"
 
 ui = Ui.new("h2gb> ")
 
-ui.register_command('test',
-  Trollop::Parser.new do
-    banner("Print stuff to the terminal")
-  end,
-  Proc.new do |opts, optval|
-    # TODO: Give the ability to run tests
-    require 'test'
-  end
-)
-
+ui.register_command('test', "Run tests") do |opts, optval|
+  # TODO: Give the ability to run tests (I don't want to mes with test.rb since I'm not at HEAD)
+  require 'test'
+end
 
 loop do
   ui.go()
