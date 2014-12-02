@@ -20,6 +20,13 @@ ui.register_command('test', "Run tests") do |opts, optval|
   require 'test'
 end
 
+ui.register_command('binaries', "List binaries") do
+  binaries = Binary.all().o[:binaries]
+  binaries.each do |b|
+    puts(b)
+  end
+end
+
 loop do
   ui.go()
 end
