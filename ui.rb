@@ -3,7 +3,7 @@ require 'shellwords' # parsing commands
 require 'trollop' # parsing commands
 
 class Ui
-  def initialize(prompt = "> ")
+  def initialize(prompt = "> ", *params)
     @prompt = prompt
 
     @commands = {}
@@ -29,6 +29,17 @@ class Ui
       end
 
       puts("For more information, --help can be passed to any command")
+    end
+
+    # This runs the block passed in, though I don't exactly understand how.
+    # Copied from Trollop
+    if(!proc.nil?)
+      (class << self; self; end).class_eval do
+        define_method :cloaker_, proc
+        meth = instance_method :cloaker_
+        remove_method :cloaker_
+        meth
+      end.bind(self).call(*params)
     end
   end
 
