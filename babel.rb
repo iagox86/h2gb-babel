@@ -27,6 +27,14 @@ ui.register_command('binaries', "List binaries") do
   end
 end
 
+COMMANDS = [
+  "binaries",
+]
+
+COMMANDS.each do |c|
+  ui.run(c)
+end
+
 loop do
   ui.go()
 end

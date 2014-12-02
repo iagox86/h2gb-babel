@@ -6,58 +6,33 @@ class Ui
   def initialize(prompt = "> ")
     @prompt = prompt
 
-    @commands = {
-      '' => {
-        :parser => Trollop::Parser.new do
-        end,
-        :proc => Proc.new do |opts, optval|
+    @commands = {}
+
+    register_command('', '') do
+    end
+
+    register_command('echo', "Print stuff to the terminal") do |opt, optval|
+      puts(optval)
+    end
+
+    register_command('exit', "Exit", :aliases => ['quit', 'q']) do
+      exit
+    end
+
+    register_command('help', "Shows a help menu", :aliases => 'q') do |opts, optval|
+      puts("Here are the available commands, listed alphabetically:")
+      @commands.keys.sort.each do |name|
+        # Don't display the empty command
+        if(name != "")
+          puts("- #{name}")
         end
-      },
+      end
 
-      'echo' => {
-        :parser => Trollop::Parser.new do
-          banner("Print stuff to the terminal")
-        end,
-        :proc => Proc.new do |opts, optval|
-          puts(optval)
-        end
-      },
-
-      'quit' => {
-        :parser => Trollop::Parser.new do
-          banner("Exits dnscat2")
-        end,
-        :proc => Proc.new do |opts, optval|
-          exit
-        end
-      },
-
-      'help' => {
-        :parser => Trollop::Parser.new do
-          banner("Shows a help menu")
-        end,
-
-        :proc => Proc.new do |opts, optval|
-          puts("Here are the available commands, listed alphabetically:")
-          @commands.keys.sort.each do |name|
-            # Don't display the empty command
-            if(name != "")
-              puts("- #{name}")
-            end
-          end
-
-          puts("For more information, --help can be passed to any command")
-        end,
-      }
-#      Trollop::Parser.new do
-#        banner("Interact with a session")
-#        opt :i, "Interact with the chosen session", :type => :integer, :required => false
-#      end,
-#          opts[:i])
-    }
+      puts("For more information, --help can be passed to any command")
+    end
   end
 
-  def register_command(name, parser)
+  def register_command(name, parser, params = {})
     result = @commands.delete(name)
 
     if(parser.is_a?(String))
@@ -119,8 +94,10 @@ class Ui
   end
 
   def go()
-    line = Readline.readline(@prompt, true)
+    run(Readline.readline(@prompt, true))
+  end
 
+  def run(line)
     # If we hit EOF, terminate
     if(line.nil?)
       puts()
