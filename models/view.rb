@@ -14,13 +14,34 @@ class View < Model
   end
 
   def edit_segments()
-    if(@o[:segments].nil?)
-      return
+    if(@o.is_a?(Hash))
+      if(@o[:segments].nil?)
+        return
+      end
+
+      @o[:segments].each() do |segment|
+        yield(segment)
+      end
+    end
+  end
+
+  def array_to_hash(array, key)
+    result = {}
+    array.each do |v|
+      result[v.delete(key)] = v
     end
 
-    @o[:segments].map() do |name, segment|
-      yield(segment)
+    return result
+  end
+
+  def hash_to_array(hash, key)
+    result = []
+
+    hash.each_pair do |k, v|
+      result << v.merge(key => k)
     end
+
+    return result
   end
 
   def after_request()
@@ -31,6 +52,7 @@ class View < Model
         segment[:data] = Base64.decode64(segment[:data])
       end
 
+      # Decode the raw data in the nodes
       if(!segment[:nodes].nil?)
         fixed = {}
         segment[:nodes].each_pair do |k, v|
@@ -44,6 +66,13 @@ class View < Model
         segment[:nodes] = fixed
       end
       segment # return
+    end
+
+    # Convert the segments into a hash
+    if(@o.is_a?(Hash))
+      if(!@o[:segments].nil?)
+        @o[:segments] = array_to_hash(@o[:segments], :name)
+      end
     end
   end
 
@@ -71,44 +100,52 @@ class View < Model
     return post_stuff('/views/:view_id/redo', params.merge({:view_id => self.o[:view_id]})).o[:segments]
   end
 
+  # TODO: Add a free-form details field to segments
   def new_segment(name, address, file_address, data, params = {})
     result = post_stuff("/views/:view_id/new_segments", {
       :view_id      => self.o[:view_id],
-      :segments     => {name => {
+      :segments     => [
+        :name         => name,
         :address      => address,
         :file_address => file_address,
         :data         => Base64.encode64(data),
-      }}
+      ]
     }.merge(params))
-
-    pp result
 
     return result.o[:segments]
   end
 
   def new_segments(segments, params = {})
-    segments.each_pair do |name, segment|
+    segments.each_value do |segment|
       segment[:data] = Base64.encode64(segment[:data])
     end
 
-    return post_stuff("/views/:view_id/new_segments", {
+    result = post_stuff("/views/:view_id/new_segments", {
       :view_id      => self.o[:view_id],
-      :segments     => segments
+      :segments     => hash_to_array(segments, :name)
     }.merge(params)).o[:segments]
+
+    return result
   end
 
-  def delete_segment(name)
+  def delete_segment(name, params = {})
     return post_stuff("/views/:view_id/delete_segments", {
       :view_id  => self.o[:view_id],
       :segments => [name],
-    }).o[:segments]
+    }.merge(params)).o[:segments]
   end
 
-  def delete_segments(names)
+  def delete_all_segments(params = {})
+    return post_stuff("/views/:view_id/delete_all_segments", {
+      :view_id  => self.o[:view_id],
+    }.merge(params)).o[:segments]
+  end
+
+  def delete_segments(names, params = {})
     return post_stuff("/views/:view_id/delete_segments", {
       :view_id  => self.o[:view_id],
       :segments => names,
-    }).o[:segments]
+    }.merge(params)).o[:segments]
   end
 
   def new_node(segment, address, type, length, value, details, references, params = {})
@@ -125,7 +162,7 @@ class View < Model
     }]}.merge(params)).o[:segments]
   end
 
-  def new_nodes(segment, nodes, params)
+  def new_nodes(segment, nodes, params = {})
     return post_stuff("/views/:view_id/new_nodes", { 
       :view_id => self.o[:view_id],
       :segment => segment,
@@ -133,18 +170,16 @@ class View < Model
     }.merge(params)).o[:segments]
   end
 
-  def delete_node(name)
-    return post_stuff("/views/:view_id/delete_nodes", {
-      :view_id => self.o[:view_id],
-      :segment => [name],
-    }).o
-  end
+  def delete_nodes(segment, addresses)
+    if(!addresses.is_a?(Array))
+      addresses = [addresses]
+    end
 
-  def delete_nodes(names)
     return post_stuff("/views/:view_id/delete_nodes", {
       :view_id => self.o[:view_id],
-      :segment => names,
-    }).o
+      :segment => segment,
+      :addresses => addresses,
+    }).o[:segments]
   end
 
   def get_segments(names = nil, params = {})
@@ -155,8 +190,8 @@ class View < Model
   end
 
   def get_segment(name, params = {})
-    if(!name.is_a?(Symbol))
-      raise(Exception, "The name parameter should probably be a symbol")
+    if(!name.is_a?(String))
+      raise(Exception, "The name parameter should probably be a String")
     end
 
     result = get_segments(name, params)
@@ -166,17 +201,30 @@ class View < Model
     if(result.size() > 1)
       raise(Exception, "More than one result had that name! (Note: that shouldn't be possible...)")
     end
+    if(result[name].nil?)
+      raise(Exception, "One segment was returned, but it wasn't the right one... #{result.keys.pop}")
+    end
 
     # Pull out the one entry we wanted
-    result = result[name.to_sym] # TODO: Make symbols the default
-
-    return result
+    return result[name]
   end
 
   def get_undo_log(params = {})
     return get_stuff("/views/:view_id/debug/undo_log", {
       :view_id => self.o[:view_id]
     }.merge(params)).o
+  end
+
+  def clear_undo_log(params = {})
+    return post_stuff("/views/:view_id/clear_undo_log", {
+      :view_id => self.o[:view_id]
+    }.merge(params)).o
+  end
+
+  # Mostly for testing, so I can get the view into a clean state
+  def reset()
+    delete_all_segments()
+    clear_undo_log()
   end
 
   def print()
@@ -193,5 +241,41 @@ class View < Model
         puts("%s:%08x %s %s [%s]%s" % [segment[:name], node[:address], raw, node[:value], node[:type], xrefs])
       end
     end
+  end
+
+  def set_properties(hash, params = {})
+    if(!hash.is_a?(Hash))
+      raise(Exception, "set_properties() requires a hash")
+    end
+
+    return post_stuff('/views/:view_id/set_properties', {
+      :view_id => self.o[:view_id],
+      :properties => hash,
+    }.merge(params)).o
+  end
+
+  def set_property(key, value, params = {})
+    return set_properties({key=>value}, params)
+  end
+
+  def delete_property(key, params = {})
+    return set_property(key, nil, params)
+  end
+
+  def get_properties(keys = nil, params = {})
+    if(!keys.nil? && !keys.is_a?(Array))
+      raise(Exception, "WARNING: 'keys' needs to be an array")
+    end
+
+    result = post_stuff('/views/:view_id/get_properties', {
+      :view_id => self.o[:view_id],
+      :keys => keys,
+    }.merge(params))
+
+    return result.o
+  end
+
+  def get_property(key, params = {})
+    return get_properties([key], params)[key]
   end
 end
