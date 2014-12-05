@@ -8,6 +8,7 @@ require 'models/binary'
 require 'models/workspace'
 require 'models/view'
 
+require 'test'
 require 'ui'
 
 
@@ -15,8 +16,7 @@ HOST = ARGV[0] || "http://localhost:9292"
 
 base_ui = Ui.new("h2gb> ") do
   register_command('test', "Run tests") do |opts, optval|
-    # TODO: Give the ability to run tests (I don't want to mes with test.rb since I'm not at HEAD)
-    require 'test'
+    Test.test()
   end
 
   register_command('binaries', "List binaries") do
