@@ -15,6 +15,8 @@ require 'pp' # TODO: Debug
 @@workspace_id = nil
 @@view_id = nil
 
+BINARY_TEST_DATA = IO.read("./sample.raw")
+
 class Test
   def Test.assert(boolean, test, pass = nil, fail = nil)
     if(boolean)
@@ -104,7 +106,7 @@ class Test
     binary = Binary.create(
       :name => "Binary Test",
       :comment => "Test binary",
-      :data => "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      :data => BINARY_TEST_DATA,
     )
 
     assert_not_nil(binary, "Checking if the binary was created")
@@ -129,7 +131,7 @@ class Test
       :binary_id => @@binary_id,
       :name      => "Binary Test",
       :comment   => "Test binary",
-      :data      => "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      :data      => BINARY_TEST_DATA,
     } , "get_all_binaries")
 
     title("Testing retrieving all binaries (without data)")
@@ -165,7 +167,7 @@ class Test
       :binary_id => @@binary_id,
       :name      => "Binary Test",
       :comment   => "Test binary",
-      :data      => "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      :data      => BINARY_TEST_DATA,
     }, "binary_find_2")
   end
 
@@ -181,7 +183,7 @@ class Test
       :binary_id => @@binary_id,
       :name      => "new binary name",
       :comment   => "updated comment",
-      :data      => "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      :data      => BINARY_TEST_DATA,
     }, "test_save_binary_1")
 
     title("Verifying the update by re-fetching the record")
@@ -191,7 +193,7 @@ class Test
       :binary_id => @@binary_id,
       :name      => "new binary name",
       :comment   => "updated comment",
-      :data      => "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      :data      => BINARY_TEST_DATA,
     }, "test_save_binary_1")
   end
 

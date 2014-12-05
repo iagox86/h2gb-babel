@@ -43,6 +43,11 @@ class Binary < Model
   end
 
   def save(params = {})
+    params = params.merge(self.o)
+    # TODO: Write a test for saving new data
+    if(!params[:data].nil?)
+      params[:data] = Base64.encode64(params[:data])
+    end
     return put_stuff('/binaries/:binary_id', params.merge(self.o))
   end
 
