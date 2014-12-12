@@ -1,6 +1,5 @@
 require 'models/binary'
 require 'models/view'
-require 'models/workspace'
 
 require 'pp'
 
@@ -8,7 +7,6 @@ require 'pp'
 @@fail = 0
 
 @@binary_id = nil
-@@workspace_id = nil
 @@view_id = nil
 
 # ASCII-8bit is used to represent a byte string
@@ -194,78 +192,11 @@ class Test
     }, "test_save_binary_1")
   end
 
-    ######## WORKSPACE
-
-  def Test.test_create_workspace()
-    title("Create a workspace")
-    workspace = Workspace.create(
-      :binary_id => @@binary_id,
-      :name      => "test workspace"
-      # TODO: Properties
-    )
-
-    assert_not_nil(workspace, "Checking if anything was returned")
-    assert_type(workspace.o[:workspace_id], Fixnum, "Checking if the workspace's id value is present and numeric")
-    assert_hash(workspace.o, {
-      :name => "test workspace",
-    }, "create_workspace")
-
-    @@workspace_id = workspace.o[:workspace_id]
-  end
-
-  def Test.test_get_all_workspaces()
-    title("Testing retrieving all workspaces")
-    all_workspaces = Workspace.all(:binary_id => @@binary_id)
-
-    assert_array(all_workspaces.o[:workspaces], [
-      {
-        :workspace_id => @@workspace_id,
-        :binary_id    => @@binary_id,
-        :name         => "test workspace",
-        # TODO: Properties
-      }
-    ], "get_all_workspaces")
-  end
-
-  def Test.test_find_workspace()
-    title("Finding the workspace")
-    new_workspace = Workspace.find(@@workspace_id)
-    assert_not_nil(new_workspace, "Checking if something was returned")
-    assert_hash(new_workspace.o, {
-      :workspace_id => @@workspace_id,
-      :name         => "test workspace"
-    }, "find_workspace")
-  end
-
-  def Test.test_save_workspace()
-    title("Updating the workspace")
-
-    workspace = Workspace.find(@@workspace_id)
-    workspace.o[:name] = 'new name!?'
-    updated = workspace.save()
-
-    assert_not_nil(updated, "Checking if something was returned")
-    assert_hash(updated.o, {
-      :workspace_id => @@workspace_id,
-      :name         => "new name!?",
-    }, "save_workspace_1")
-
-    title("Doing another search for the updated workspace, just to be sure")
-
-    updated = Workspace.find(@@workspace_id)
-
-    assert_not_nil(updated, "Checking if something was returned")
-    assert_hash(updated.o, {
-      :workspace_id => @@workspace_id,
-      :name         => "new name!?",
-    }, "save_workspace_2")
-  end
-
   def Test.test_create_view()
     ######## VIEW
     title("Create a view")
     view = View.create(
-      :workspace_id => @@workspace_id,
+      :binary_id    => @@binary_id,
       :name         => "test view"
     )
 
@@ -281,12 +212,12 @@ class Test
 
   def Test.test_get_all_views()
     title("Testing retrieving all views")
-    all_views = View.all(:workspace_id => @@workspace_id)
+    all_views = View.all(:binary_id => @@binary_id)
 
     assert_array(all_views.o[:views], [
       {
         :view_id      => @@view_id,
-        :workspace_id => @@workspace_id,
+        :binary_id    => @@binary_id,
         :name         => "test view",
         :revision     => 1,
       },
@@ -1222,41 +1153,6 @@ class Test
       :test2 => "1234",
     }, "property_delete_value_1", true)
 
-    workspace = Workspace.find(@@workspace_id)
-
-    workspace.set_property(:test,  123)
-    workspace.set_property(:test2, "1234")
-    assert_equal(workspace.get_property(:test),  123,    "Checking if an integer property works")
-    assert_equal(workspace.get_property(:test2), "1234", "Checking if a string property works")
-
-    workspace.set_property(:test, [1, 2, 3])
-    assert_array(workspace.get_property(:test), [1, 2, 3], "property_overwrite_array_2")
-
-    workspace.set_property(:test, { :a => "b", :c => 123 })
-    assert_hash(workspace.get_property(:test), { :a => "b", :c => 123 }, "property_store_hash_2", true)
-
-    workspace.set_properties({ :a => 'b', :c => 'd', :e => 1 })
-    assert_hash(workspace.get_properties([:a, :c, :e]), {
-      :a => 'b',
-      :c => 'd',
-      :e => 1,
-    }, "property_multiple_hashes_2", true)
-    assert_hash(workspace.get_properties(), {
-      :a => 'b',
-      :c => 'd',
-      :e => 1,
-      :test => { :a => "b", :c => 123 },
-      :test2 => "1234",
-    }, "property_all_properties_2", true)
-
-    workspace.delete_property(:test)
-    assert_hash(workspace.get_properties(), {
-      :a => 'b',
-      :c => 'd',
-      :e => 1,
-      :test2 => "1234",
-    }, "property_delete_value_2", true)
-
     view = View.find(@@view_id)
 
     view.set_property(:test,  123)
@@ -1301,12 +1197,6 @@ class Test
       test_find_binary()
       test_save_binary()
 
-      # Tests for workspaces
-      test_create_workspace() # Mandatory (sets @@workspace_id)
-      test_get_all_workspaces()
-      test_find_workspace()
-      test_save_workspace()
-
       # Tests for views
       test_create_view() # Mandatory (sets @@view_id)
       test_get_all_views()
@@ -1349,20 +1239,6 @@ class Test
           assert_equal(result.o[:deleted], true, "Checking if delete() returned successfully")
         else
           puts("** NO VIEW TO DELETE")
-        end
-      rescue Exception => e
-        puts("Delete failed: #{e}")
-      end
-
-      begin
-        title("Deleting workspace")
-        if(!@@workspace_id.nil?)
-          result = Workspace.find(@@workspace_id).delete()
-          assert_not_nil(result, "Checking if delete() returned")
-          assert_type(result.o, Hash, "Checking if delete() returned a hash")
-          assert_equal(result.o[:deleted], true, "Checking if delete() returned successfully")
-        else
-          puts("** NO WORKSPACE TO DELETE")
         end
       rescue Exception => e
         puts("Delete failed: #{e}")

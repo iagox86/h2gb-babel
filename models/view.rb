@@ -77,11 +77,11 @@ class View < Model
   end
 
   def View.create(params)
-    return post_stuff(View, '/workspaces/:workspace_id/new_view', params)
+    return post_stuff(View, '/binaries/:binary_id/new_view', params)
   end
 
   def View.all(params = {})
-    return get_stuff(View, '/workspaces/:workspace_id/views', params)
+    return get_stuff(View, '/binaries/:binary_id/views', params)
   end
 
   def save(params = {})

@@ -5,7 +5,6 @@ require 'trollop' # for command parsers
 require 'arch/x86'
 
 require 'models/binary'
-require 'models/workspace'
 require 'models/view'
 
 require 'test'
@@ -110,6 +109,9 @@ def do_base_ui()
     base_ui.go()
   end
 end
+
+Test.test()
+exit
 
 do_base_ui()
 
