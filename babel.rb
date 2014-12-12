@@ -5,7 +5,7 @@ require 'trollop' # for command parsers
 require 'arch/x86'
 
 require 'models/binary'
-require 'models/view'
+require 'models/workspace'
 
 require 'test'
 require 'ui'

@@ -1,16 +1,16 @@
-# view.rb
+# workspace.rb
 # Create on November 4, 2014
 # By Ron Bowes
 
 require 'models/model'
 
-class View < Model
+class Workspace < Model
   def initialize(params = {})
     super(params)
   end
 
-  def View.find(id, params = {})
-    return get_stuff(View, '/views/:view_id', params.merge({ :view_id => id }))
+  def Workspace.find(id, params = {})
+    return get_stuff(Workspace, '/workspaces/:workspace_id', params.merge({ :workspace_id => id }))
   end
 
   def edit_segments()
@@ -76,34 +76,34 @@ class View < Model
     end
   end
 
-  def View.create(params)
-    return post_stuff(View, '/binaries/:binary_id/new_view', params)
+  def Workspace.create(params)
+    return post_stuff(Workspace, '/binaries/:binary_id/new_workspace', params)
   end
 
-  def View.all(params = {})
-    return get_stuff(View, '/binaries/:binary_id/views', params)
+  def Workspace.all(params = {})
+    return get_stuff(Workspace, '/binaries/:binary_id/workspaces', params)
   end
 
   def save(params = {})
-    return put_stuff('/views/:view_id', params.merge(self.o)) # TODO: Is this merge necessary?
+    return put_stuff('/workspaces/:workspace_id', params.merge(self.o)) # TODO: Is this merge necessary?
   end
 
   def delete(params = {})
-    return delete_stuff('/views/:view_id', params.merge({:view_id => self.o[:view_id]}))
+    return delete_stuff('/workspaces/:workspace_id', params.merge({:workspace_id => self.o[:workspace_id]}))
   end
 
   def undo(params = {})
-    return post_stuff('/views/:view_id/undo', params.merge({:view_id => self.o[:view_id]})).o[:segments]
+    return post_stuff('/workspaces/:workspace_id/undo', params.merge({:workspace_id => self.o[:workspace_id]})).o[:segments]
   end
 
   def redo(params = {})
-    return post_stuff('/views/:view_id/redo', params.merge({:view_id => self.o[:view_id]})).o[:segments]
+    return post_stuff('/workspaces/:workspace_id/redo', params.merge({:workspace_id => self.o[:workspace_id]})).o[:segments]
   end
 
   # TODO: Add a free-form details field to segments
   def new_segment(name, address, file_address, data, params = {})
-    result = post_stuff("/views/:view_id/new_segments", {
-      :view_id      => self.o[:view_id],
+    result = post_stuff("/workspaces/:workspace_id/new_segments", {
+      :workspace_id      => self.o[:workspace_id],
       :segments     => [
         :name         => name,
         :address      => address,
@@ -120,8 +120,8 @@ class View < Model
       segment[:data] = Base64.encode64(segment[:data])
     end
 
-    result = post_stuff("/views/:view_id/new_segments", {
-      :view_id      => self.o[:view_id],
+    result = post_stuff("/workspaces/:workspace_id/new_segments", {
+      :workspace_id      => self.o[:workspace_id],
       :segments     => hash_to_array(segments, :name)
     }.merge(params)).o[:segments]
 
@@ -129,28 +129,28 @@ class View < Model
   end
 
   def delete_segment(name, params = {})
-    return post_stuff("/views/:view_id/delete_segments", {
-      :view_id  => self.o[:view_id],
+    return post_stuff("/workspaces/:workspace_id/delete_segments", {
+      :workspace_id  => self.o[:workspace_id],
       :segments => [name],
     }.merge(params)).o[:segments]
   end
 
   def delete_all_segments(params = {})
-    return post_stuff("/views/:view_id/delete_all_segments", {
-      :view_id  => self.o[:view_id],
+    return post_stuff("/workspaces/:workspace_id/delete_all_segments", {
+      :workspace_id  => self.o[:workspace_id],
     }.merge(params)).o[:segments]
   end
 
   def delete_segments(names, params = {})
-    return post_stuff("/views/:view_id/delete_segments", {
-      :view_id  => self.o[:view_id],
+    return post_stuff("/workspaces/:workspace_id/delete_segments", {
+      :workspace_id  => self.o[:workspace_id],
       :segments => names,
     }.merge(params)).o[:segments]
   end
 
   def new_node(segment, address, type, length, value, details, references, params = {})
-    return post_stuff("/views/:view_id/new_nodes", { 
-      :view_id => self.o[:view_id],
+    return post_stuff("/workspaces/:workspace_id/new_nodes", { 
+      :workspace_id => self.o[:workspace_id],
       :segment => segment,
       :nodes => [{
         :address => address,
@@ -163,8 +163,8 @@ class View < Model
   end
 
   def new_nodes(segment, nodes, params = {})
-    return post_stuff("/views/:view_id/new_nodes", { 
-      :view_id => self.o[:view_id],
+    return post_stuff("/workspaces/:workspace_id/new_nodes", { 
+      :workspace_id => self.o[:workspace_id],
       :segment => segment,
       :nodes => nodes
     }.merge(params)).o[:segments]
@@ -175,16 +175,16 @@ class View < Model
       addresses = [addresses]
     end
 
-    return post_stuff("/views/:view_id/delete_nodes", {
-      :view_id => self.o[:view_id],
+    return post_stuff("/workspaces/:workspace_id/delete_nodes", {
+      :workspace_id => self.o[:workspace_id],
       :segment => segment,
       :addresses => addresses,
     }).o[:segments]
   end
 
   def get_segments(names = nil, params = {})
-    return get_stuff("/views/:view_id/segments", {
-      :view_id       => self.o[:view_id],
+    return get_stuff("/workspaces/:workspace_id/segments", {
+      :workspace_id       => self.o[:workspace_id],
       :names         => names,
     }.merge(params)).o[:segments]
   end
@@ -210,18 +210,18 @@ class View < Model
   end
 
   def get_undo_log(params = {})
-    return get_stuff("/views/:view_id/debug/undo_log", {
-      :view_id => self.o[:view_id]
+    return get_stuff("/workspaces/:workspace_id/debug/undo_log", {
+      :workspace_id => self.o[:workspace_id]
     }.merge(params)).o
   end
 
   def clear_undo_log(params = {})
-    return post_stuff("/views/:view_id/clear_undo_log", {
-      :view_id => self.o[:view_id]
+    return post_stuff("/workspaces/:workspace_id/clear_undo_log", {
+      :workspace_id => self.o[:workspace_id]
     }.merge(params)).o
   end
 
-  # Mostly for testing, so I can get the view into a clean state
+  # Mostly for testing, so I can get the workspace into a clean state
   def reset()
     delete_all_segments()
     clear_undo_log()
@@ -248,8 +248,8 @@ class View < Model
       raise(Exception, "set_properties() requires a hash")
     end
 
-    return post_stuff('/views/:view_id/set_properties', {
-      :view_id => self.o[:view_id],
+    return post_stuff('/workspaces/:workspace_id/set_properties', {
+      :workspace_id => self.o[:workspace_id],
       :properties => hash,
     }.merge(params)).o
   end
@@ -267,8 +267,8 @@ class View < Model
       raise(Exception, "WARNING: 'keys' needs to be an array")
     end
 
-    result = post_stuff('/views/:view_id/get_properties', {
-      :view_id => self.o[:view_id],
+    result = post_stuff('/workspaces/:workspace_id/get_properties', {
+      :workspace_id => self.o[:workspace_id],
       :keys => keys,
     }.merge(params))
 
