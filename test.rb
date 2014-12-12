@@ -16,7 +16,7 @@ require 'pp'
 @@view_id = nil
 
 # ASCII-8bit is used to represent a byte string
-BINARY_TEST_DATA = IO.read("./sample.raw").force_encoding(Encoding::ASCII_8BIT)
+BINARY_TEST_DATA = IO.read(File.dirname(__FILE__) + "/testfiles/sample.raw").force_encoding(Encoding::ASCII_8BIT)
 
 class Test
   def Test.assert(boolean, test, pass = nil, fail = nil)
