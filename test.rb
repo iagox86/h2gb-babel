@@ -1,7 +1,3 @@
-$LOAD_PATH << File.dirname(__FILE__)
-
-HOST = ARGV[0] || "http://localhost:9292"
-
 require 'models/binary'
 require 'models/view'
 require 'models/workspace'
