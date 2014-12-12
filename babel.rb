@@ -85,7 +85,6 @@ base_ui = Ui.new("h2gb> ") do
 end
 
 COMMANDS = [
-  "test",
 ]
 COMMANDS.each do |c|
   base_ui.run(c)

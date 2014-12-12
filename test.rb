@@ -6,7 +6,7 @@ require 'models/binary'
 require 'models/view'
 require 'models/workspace'
 
-require 'pp' # TODO: Debug
+require 'pp'
 
 @@pass = 0
 @@fail = 0
@@ -15,7 +15,8 @@ require 'pp' # TODO: Debug
 @@workspace_id = nil
 @@view_id = nil
 
-BINARY_TEST_DATA = IO.read("./sample.raw")
+# ASCII-8bit is used to represent a byte string
+BINARY_TEST_DATA = IO.read("./sample.raw").force_encoding(Encoding::ASCII_8BIT)
 
 class Test
   def Test.assert(boolean, test, pass = nil, fail = nil)
