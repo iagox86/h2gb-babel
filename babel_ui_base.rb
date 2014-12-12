@@ -2,7 +2,7 @@
 # By Ron Bowes
 # Created December 12, 2014
 
-class UiBase
+class BabelUiBase
   def initialize()
 
   end
@@ -45,7 +45,7 @@ class UiBase
       puts(binary.o)
 
       if(opts[:u])
-        UiBinary.go(binary.o[:binary_id])
+        BabelUiBinary.go(binary.o[:binary_id])
       end
     end
 
@@ -84,7 +84,7 @@ class UiBase
     end
 
     base_ui.register_command("use", "Interact with the binary (Usage: use <id>)") do |opts, optval|
-      UiBinary.go(optval.to_i)
+      BabelUiBinary.go(optval.to_i)
     end
 
     loop do

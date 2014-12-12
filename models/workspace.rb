@@ -87,7 +87,6 @@ class Workspace < Model
   end
 
   def save(params = {})
-    require_param(:binary_id)
     return put_stuff('/workspaces/:workspace_id', params.merge(self.o)) # TODO: Is this merge necessary?
   end
 

@@ -2,14 +2,14 @@
 # By Ron Bowes
 # Created December 12, 2014
 
-class UiBinary
+class BabelUiBinary
   def initialize(binary_id)
     @binary = Binary.find(binary_id)
     @binary_id = binary_id
   end
 
-  def UiBinary.go(binary_id)
-    UiBinary.new(binary_id).go()
+  def BabelUiBinary.go(binary_id)
+    BabelUiBinary.new(binary_id).go()
   end
 
   def go()
@@ -33,7 +33,7 @@ class UiBinary
       puts(workspace.o)
 
       if(opts[:u])
-        UiWorkspace.go(@binary_id, workspace.o[:workspace_id])
+        BabelUiWorkspace.go(@binary_id, workspace.o[:workspace_id])
       end
     end
 
@@ -49,7 +49,7 @@ class UiBinary
     end
 
     binary_ui.register_command("use", "Interact with the workspace (Usage: use <id>)") do |opts, optval|
-      UiWorkspace.go(@binary_id, optval.to_i)
+      BabelUiWorkspace.go(@binary_id, optval.to_i)
     end
 
     analyze_parser = Trollop::Parser.new do

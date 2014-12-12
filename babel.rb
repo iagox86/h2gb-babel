@@ -9,12 +9,12 @@ require 'models/workspace'
 
 require 'test'
 require 'ui'
-require 'ui_base'
-require 'ui_binary'
-require 'ui_workspace'
+require 'babel_ui_base'
+require 'babel_ui_binary'
+require 'babel_ui_workspace'
 
 HOST = ARGV[0] || "http://localhost:9292"
 
-ui = UiBase.new()
+ui = BabelUiBase.new()
 ui.go()
 
