@@ -77,14 +77,17 @@ class Workspace < Model
   end
 
   def Workspace.create(params)
+    require_param(params, :binary_id)
     return post_stuff(Workspace, '/binaries/:binary_id/new_workspace', params)
   end
 
   def Workspace.all(params = {})
+    require_param(params, :binary_id)
     return get_stuff(Workspace, '/binaries/:binary_id/workspaces', params)
   end
 
   def save(params = {})
+    require_param(:binary_id)
     return put_stuff('/workspaces/:workspace_id', params.merge(self.o)) # TODO: Is this merge necessary?
   end
 

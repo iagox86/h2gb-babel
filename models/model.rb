@@ -93,4 +93,10 @@ class Model
   def delete_stuff(url, params = {})
     return Model.delete_stuff(self.class, url, params)
   end
+
+  def Model.require_param(params, name)
+    if(params[name].nil?)
+      raise(Exception, "The parameter '#{name}' is required!")
+    end
+  end
 end
