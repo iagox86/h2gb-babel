@@ -184,6 +184,12 @@ class Workspace < Model
     }).o[:segments]
   end
 
+  def get_all_segments(params = {})
+    return get_stuff("/workspaces/:workspace_id/segments", {
+      :workspace_id       => self.o[:workspace_id],
+    }.merge(params)).o[:segments]
+  end
+
   def get_segments(names = nil, params = {})
     return get_stuff("/workspaces/:workspace_id/segments", {
       :workspace_id       => self.o[:workspace_id],

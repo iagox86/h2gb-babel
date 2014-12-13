@@ -1,8 +1,8 @@
 require 'base64'
 require 'metasm'
 
-module PE
-  def parse_pe()
+class PE
+  def PE.parse(data)
     pe = { }
 
     e = Metasm::PE.decode_file(self.filename)

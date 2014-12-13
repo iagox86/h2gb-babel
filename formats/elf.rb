@@ -1,8 +1,8 @@
 require 'base64'
 require 'metasm'
 
-module ELF
-  def parse_elf()
+class ELF
+  def ELF.parse(data)
     elf = { }
 
     e = Metasm::ELF.decode_file(self.filename)

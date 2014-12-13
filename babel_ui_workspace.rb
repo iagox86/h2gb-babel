@@ -21,6 +21,25 @@ class BabelUiWorkspace
       return
     end
 
+    segments_parser = Trollop::Parser.new do
+      banner("List segments")
+      opt :d, "List the data, as well (hex encoded)"
+    end
+
+    workspace_ui.register_command("segments", segments_parser) do |opts, optval|
+      if(opts[:d])
+        segments = @workspace.get_all_segments(:with_data => true)
+        segments.each do |s|
+          s[:data] = s[:data].unpack("H*")
+        end
+      else
+        segments = @workspace.get_all_segments()
+      end
+      segments.each do |s|
+        puts(s.inspect)
+      end
+    end
+
     loop do
       workspace_ui.go()
     end

@@ -2,6 +2,8 @@
 # By Ron Bowes
 # Created December 12, 2014
 
+require 'analyzer'
+
 class BabelUiBinary
   def initialize(binary_id)
     @binary = Binary.find(binary_id)
@@ -57,7 +59,21 @@ class BabelUiBinary
       opt :u, "Interact with the workspace after creating it"
     end
 
-    binary_ui.register_command("analyze", analyze_parser) do
+    binary_ui.register_command("analyze", analyze_parser) do |opts, optval|
+      name = "workspace TODO[date]"
+      if(!optval.nil? && optval != '')
+        name = optval
+      end
+
+      workspace = Workspace.create(:binary_id => @binary_id, :name => name)
+      puts(workspace.o)
+
+      Analyzer.analyze(@binary_id, workspace.o[:workspace_id])
+      workspace.save()
+
+      if(opts[:u])
+        BabelUiWorkspace.go(@binary_id, workspace.o[:workspace_id])
+      end
     end
 
     loop do

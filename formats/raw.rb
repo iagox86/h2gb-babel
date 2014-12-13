@@ -1,9 +1,9 @@
 require 'base64'
 require 'metasm'
 
-module Raw
-  def parse_raw()
-    size = File.size(self.filename)
+class Raw
+  def Raw.parse(data)
+    size = data.length
 
     out = { }
 
@@ -14,15 +14,14 @@ module Raw
       :entrypoint   => 0,
     }
 
-    # Sections
-    section = {
-        :name        => ".raw",
-        :addr        => 0,
-        :file_offset => 0,
-        :file_size   => size
-      }
-
-    out[:sections] = [section]
+    # Segments
+    out[:segments] = [{
+      :name        => ".raw",
+      :address     => 0,
+      :file_offset => 0,
+      :file_size   => size,
+      :data        => data,
+    }]
 
     return out
   end
