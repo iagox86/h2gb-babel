@@ -267,26 +267,26 @@ class Test
     start_revision = workspace.o[:revision]
 
     title("Creating a segment")
-    segments = workspace.new_segment('create_segment_1', 0x00000000, 0x00004000, "AAAAAAAA")
+    segments = workspace.new_segment('create_segment_1', 0x00000000, "AAAAAAAA")
     assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
     assert_hash(segments, {
-      'create_segment_1' => { :address => 0, :file_address => 0x4000, :data => nil},
+      'create_segment_1' => { :address => 0, :data => nil},
     }, "create_segment_1")
 
     title("Creating another segment (only the new segment should be returned)")
-    segments = workspace.new_segment('create_segment_2', 0x00000000, 0x00004000, "AAAAAAAA")
+    segments = workspace.new_segment('create_segment_2', 0x00000000, "AAAAAAAA")
     assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
     assert_hash(segments, {
-      'create_segment_2' => { :address => 0, :file_address => 0x4000, :data => nil},
+      'create_segment_2' => { :address => 0, :data => nil},
     }, "create_segment_2")
 
     title("Creating another segment and requesting all changes since the first segment")
-    segments = workspace.new_segment('create_segment_3', 0x00000000, 0x00004000, "AAAAAAAA", { :since => start_revision })
+    segments = workspace.new_segment('create_segment_3', 0x00000000, "AAAAAAAA", {}, { :since => start_revision })
     assert_equal(segments.length, 3, "Checking if the right number of segments were returned")
     assert_hash(segments, {
-      'create_segment_1' => { :address => 0, :file_address => 0x4000, :data => nil},
-      'create_segment_2' => { :address => 0, :file_address => 0x4000, :data => nil},
-      'create_segment_3' => { :address => 0, :file_address => 0x4000, :data => nil},
+      'create_segment_1' => { :address => 0, :data => nil},
+      'create_segment_2' => { :address => 0, :data => nil},
+      'create_segment_3' => { :address => 0, :data => nil},
     }, "create_segment_3")
   end
 
@@ -297,17 +297,17 @@ class Test
     start_revision = workspace.o[:revision]
 
     title("Creating a segment")
-    segments = workspace.new_segment('delete_segment_1', 0x00000000, 0x00004000, "AAAAAAAA")
+    segments = workspace.new_segment('delete_segment_1', 0x00000000, "AAAAAAAA")
     assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
     assert_hash(segments, {
-      'delete_segment_1' => { :address => 0, :file_address => 0x4000, :data => nil},
+      'delete_segment_1' => { :address => 0, :data => nil},
     }, "delete_segment_1")
 
     title("Creating another segment (only the new segment should be returned)")
-    segments = workspace.new_segment('delete_segment_2', 0x00000000, 0x00004000, "AAAAAAAA")
+    segments = workspace.new_segment('delete_segment_2', 0x00000000, "AAAAAAAA")
     assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
     assert_hash(segments, {
-      'delete_segment_2' => { :address => 0, :file_address => 0x4000, :data => nil},
+      'delete_segment_2' => { :address => 0, :data => nil},
     }, "delete_segment_2")
 
     title("Deleting the second segment, nothing should be returned")
@@ -315,18 +315,18 @@ class Test
     assert_equal(result, {}, "Checking that nothing is returned")
 
     title("Creating another segment and requesting all changes since the first segment")
-    segments = workspace.new_segment('delete_segment_3', 0x00000000, 0x00004000, "AAAAAAAA", { :since => start_revision })
+    segments = workspace.new_segment('delete_segment_3', 0x00000000, "AAAAAAAA", {}, { :since => start_revision })
     assert_equal(segments.length, 2, "Checking if the right number of segments were returned")
     assert_hash(segments, {
-      'delete_segment_1' => { :address => 0, :file_address => 0x4000, :data => nil},
-      'delete_segment_3' => { :address => 0, :file_address => 0x4000, :data => nil},
+      'delete_segment_1' => { :address => 0, :data => nil},
+      'delete_segment_3' => { :address => 0, :data => nil},
     }, "delete_segment_3")
 
     title("Deleting the third segment, and requesting all changes since the first segment")
     segments = workspace.delete_segment('delete_segment_3', {:since => start_revision})
     assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
     assert_hash(segments, {
-      'delete_segment_1' => { :address => 0, :file_address => 0x4000, :data => nil},
+      'delete_segment_1' => { :address => 0, :data => nil},
     }, "delete_segment_4")
   end
 
@@ -336,7 +336,7 @@ class Test
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
-    segments = workspace.new_segment('s1', 0x00000000, 0x00004000, "AAAAAAAA")
+    segments = workspace.new_segment('s1', 0x00000000, "AAAAAAAA")
 
     title("Find segments (w/ default)")
 
@@ -414,7 +414,7 @@ class Test
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
-    segments = workspace.new_segment('s1', 0x00000000, 0x00004000, "AAAAAAAA")
+    segments = workspace.new_segment('s1', 0x00000000, "AAAAAAAA")
 
     title("Verifying the undo log")
     assert_hash(workspace.get_undo_log, {
@@ -575,7 +575,7 @@ class Test
     }, 'undo5.5')
 
     title("Creating a segment to hopefully kill the redo buffer")
-    segments = workspace.new_segment("deleteme", 0x00000000, 0x00004000, "ABCDEFGH", :since => 0)
+    segments = workspace.new_segment("deleteme", 0x00000000, "ABCDEFGH", {}, :since => 0)
     assert_equal(segments.length, 2, "Checking if both segments were returned (if this fails, :since is probably broken)")
     assert_hash(segments, {
       's1'       => {},
@@ -715,7 +715,7 @@ class Test
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
-    segment = workspace.new_segment('s2', 0x0000, 0x4000, "ABCDEFGH")
+    segment = workspace.new_segment('s2', 0x0000, "ABCDEFGH")
     assert_equal(segment.keys.length(), 1, "Checking if only the new segment exists")
     assert_not_nil(segment['s2'], "Checking that the segment was created")
 
@@ -897,16 +897,16 @@ class Test
     workspace.reset()
 
     result = workspace.new_segments({
-      'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, },
-      'B' => { :address => 16, :file_address => 1, :data => 'B' * 16, },
-      'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, },
-      'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, },
+      'A' => { :address => 0,  :data => 'A' * 16, },
+      'B' => { :address => 16, :data => 'B' * 16, },
+      'C' => { :address => 32, :data => 'C' * 16, },
+      'D' => { :address => 48, :data => 'D' * 16, },
     })
     assert_hash(result, {
-      'A' => { :address => 0,  :file_address => 0 },
-      'B' => { :address => 16, :file_address => 1 },
-      'C' => { :address => 32, :file_address => 2 },
-      'D' => { :address => 48, :file_address => 3 },
+      'A' => { :address => 0,  },
+      'B' => { :address => 16, },
+      'C' => { :address => 32, },
+      'D' => { :address => 48, },
     }, "create_multiple_segments_1", true)
 
     result = workspace.undo()
@@ -914,16 +914,16 @@ class Test
     # Go back to a clean slate
     title("Creating 4 segments at once, and requesting data + nodes")
     result = workspace.new_segments({
-      'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, },
-      'B' => { :address => 16, :file_address => 1, :data => 'B' * 16, },
-      'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, },
-      'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, },
+      'A' => { :address => 0,  :data => 'A' * 16, },
+      'B' => { :address => 16, :data => 'B' * 16, },
+      'C' => { :address => 32, :data => 'C' * 16, },
+      'D' => { :address => 48, :data => 'D' * 16, },
     }, :with_data => true, :with_nodes => true)
     assert_hash(result, {
-      'A' => { :address => 0,  :file_address => 0, :data => 'A' * 16, :nodes => { 0  => {:type => 'undefined'}}, },
-      'B' => { :address => 16, :file_address => 1, :data => 'B' * 16, :nodes => { 16 => {:type => 'undefined'}}, },
-      'C' => { :address => 32, :file_address => 2, :data => 'C' * 16, :nodes => { 32 => {:type => 'undefined'}}, },
-      'D' => { :address => 48, :file_address => 3, :data => 'D' * 16, :nodes => { 48 => {:type => 'undefined'}}, },
+      'A' => { :address => 0,  :data => 'A' * 16, :nodes => { 0  => {:type => 'undefined'}}, },
+      'B' => { :address => 16, :data => 'B' * 16, :nodes => { 16 => {:type => 'undefined'}}, },
+      'C' => { :address => 32, :data => 'C' * 16, :nodes => { 32 => {:type => 'undefined'}}, },
+      'D' => { :address => 48, :data => 'D' * 16, :nodes => { 48 => {:type => 'undefined'}}, },
     }, "create_multiple_segments_2", true)
 
     # Go back to a clean slate
@@ -935,7 +935,7 @@ class Test
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
-    segment = workspace.new_segment('A', 0x1000, 0x0000, "1111222233334444")
+    segment = workspace.new_segment('A', 0x1000, "1111222233334444")
     assert_type(segment, Hash, "Checking if the segment returned properly")
     result = workspace.new_nodes('A', [
       {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :refs => []},
@@ -984,7 +984,7 @@ class Test
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
-    segment = workspace.new_segment('X', 0x0, 0x0, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    segment = workspace.new_segment('X', 0x0, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
     assert_type(segment, Hash, "Checking if the segment returned properly")
 
     result = workspace.new_nodes('X', [
@@ -1117,6 +1117,18 @@ class Test
     assert_equal(result, {}, "Checking if the segment was deleted")
   end
 
+  def Test.test_segment_details()
+    title("Testing setting arbitrary properties in segments")
+    workspace = Workspace.find(@@workspace_id)
+    workspace.reset()
+
+    segment = workspace.new_segment('Y', 0x0, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", {:a => "b"})
+    assert_type(segment, Hash, "Checking if the segment returned properly")
+    assert_hash(segment, {
+      'Y' => { :address => 0, :data => nil, :details => {:a => 'b'}},
+    }, "segment_details_1")
+  end
+
   def Test.test_properties()
     binary = Binary.find(@@binary_id)
 
@@ -1210,6 +1222,7 @@ class Test
       test_create_multiple_segments()
       test_create_multiple_nodes()
       test_xrefs()
+      test_segment_details()
 
       # Tests for everything
       test_properties()

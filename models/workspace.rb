@@ -103,14 +103,14 @@ class Workspace < Model
   end
 
   # TODO: Add a free-form details field to segments
-  def new_segment(name, address, file_address, data, params = {})
+  def new_segment(name, address, data, details = {}, params = {})
     result = post_stuff("/workspaces/:workspace_id/new_segments", {
       :workspace_id      => self.o[:workspace_id],
       :segments     => [
         :name         => name,
         :address      => address,
-        :file_address => file_address,
         :data         => Base64.encode64(data),
+        :details      => details,
       ]
     }.merge(params))
 
@@ -123,7 +123,7 @@ class Workspace < Model
     end
 
     result = post_stuff("/workspaces/:workspace_id/new_segments", {
-      :workspace_id      => self.o[:workspace_id],
+      :workspace_id => self.o[:workspace_id],
       :segments     => hash_to_array(segments, :name)
     }.merge(params)).o[:segments]
 
