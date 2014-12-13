@@ -239,15 +239,15 @@ class Workspace < Model
     segments = get_segments(nil, :with_nodes => true, :with_data => true)
 
     segments.each_pair do |name, segment|
-      pp segment
       segment[:nodes].each_pair do |address, node|
-        raw = Base64.decode64(node[:raw])
+        raw = node[:raw].unpack("H*").pop
         raw = raw + (" " * (12 - raw.length()))
 
+        xrefs = ''
         if(node[:xrefs])
-          xrefs = node[:xrefs] ? (' XREFS: %s' % node[:xrefs].map() { |x| '0x%x' % x }.join(", ")) : ""
+#          xrefs = node[:xrefs] ? (' XREFS: %s' % node[:xrefs].map() { |x| '0x%x' % x }.join(", ")) : ""
         end
-        puts("%s:%08x %s %s [%s]%s" % [segment[:name], node[:address], raw, node[:value], node[:type], xrefs])
+        puts("%s:%08x %s %s %s" % [segment[:name], node[:address], raw, node[:value], xrefs])
       end
     end
   end

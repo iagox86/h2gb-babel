@@ -151,7 +151,7 @@ class Intel < Arch
       :address    => address,
       :type       => "instruction",
       :length     => instruction.bin_length,
-      :value      => instruction.to_s,
+      :value      => instruction.instruction.to_s,
       :details    => {
 #        :stack_delta => (get_stack_change(instruction.instruction) || 0)
       },
