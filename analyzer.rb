@@ -43,21 +43,23 @@ class Analyzer
       # Do the actual disassembly
       arch = Intel.new(segment[:data], Intel::X86, segment[:address])
       addr = 0
+      nodes = []
       while(addr < segment[:data].length) do
         dis = arch.disassemble(addr)
 
-        workspace.new_node(
-          segment[:name],
-          addr,
-          dis[:type],
-          dis[:length],
-          dis[:value],
-          dis[:details],
-          dis[:references]
-        )
+        nodes << {
+          :address    => addr,
+          :type       => dis[:type],
+          :length     => dis[:length],
+          :value      => dis[:value],
+          :details    => dis[:details],
+          :references => dis[:references]
+        }
 
         addr += dis[:length]
       end
+
+      workspace.new_nodes(segment[:name], nodes)
     end
   end
 end
