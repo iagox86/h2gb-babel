@@ -3,6 +3,8 @@
 # Created December 12, 2014
 
 require 'analyzer'
+require 'ui'
+require 'babel_ui_workspace'
 
 class BabelUiBinary
   def initialize(binary_id)

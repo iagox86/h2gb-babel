@@ -2,6 +2,10 @@
 # By Ron Bowes
 # Created December 12, 2014
 
+require 'test'
+require 'ui'
+require 'babel_ui_binary'
+
 class BabelUiBase
   def initialize()
 

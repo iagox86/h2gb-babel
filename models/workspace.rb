@@ -238,8 +238,9 @@ class Workspace < Model
   def print()
     segments = get_segments(nil, :with_nodes => true, :with_data => true)
 
-    segments.each do |segment|
-      segment[:nodes].each do |node|
+    segments.each_pair do |name, segment|
+      pp segment
+      segment[:nodes].each_pair do |address, node|
         raw = Base64.decode64(node[:raw])
         raw = raw + (" " * (12 - raw.length()))
 

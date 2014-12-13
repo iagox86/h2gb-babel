@@ -10,16 +10,18 @@ require 'formats/elf'
 require 'formats/pe'
 require 'formats/raw'
 
+require 'arch/intel'
+
 require 'pp' # TODO: debug
 
 class Analyzer
+  # TODO: Get rid of network dependencies so I can test this
   def Analyzer.analyze(binary_id, workspace_id)
     binary = Binary.find(binary_id, :with_data => true)
     workspace = Workspace.find(workspace_id)
 
     puts("Analyzing: #{binary.inspect}")
     puts("Analyzing: #{workspace.inspect}")
-
 
     file = AutoFormat.parse(binary.o[:data])
 
@@ -28,12 +30,34 @@ class Analyzer
     end
 
     file[:segments].each do |segment|
+      # Create the segment
       workspace.new_segment(
         segment[:name],
         segment[:address],
-        segment[:file_address],
         segment[:data],
+        {
+          :file_address => segment[:file_address]
+        }
       )
+
+      # Do the actual disassembly
+      arch = Intel.new(segment[:data], Intel::X86, segment[:address])
+      addr = 0
+      while(addr < segment[:data].length) do
+        dis = arch.disassemble(addr)
+
+        workspace.new_node(
+          segment[:name],
+          addr,
+          dis[:type],
+          dis[:length],
+          dis[:value],
+          dis[:details],
+          dis[:references]
+        )
+
+        addr += dis[:length]
+      end
     end
   end
 end

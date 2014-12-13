@@ -16,11 +16,11 @@ class Raw
 
     # Segments
     out[:segments] = [{
-      :name        => ".raw",
-      :address     => 0,
-      :file_offset => 0,
-      :file_size   => size,
-      :data        => data,
+      :name         => ".raw",
+      :address      => 0,
+      :file_address => 0,
+      :file_size    => size,
+      :data         => data,
     }]
 
     return out

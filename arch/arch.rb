@@ -32,42 +32,21 @@ class Arch
   end
 
   # TODO: This needs to go at a higher level, it doesn't belong in the disassembler
-  def do_refs(instructions)
-    # Create an index of instructions by address
-    # TODO: There are more efficient ways to do this
-    i_by_address = {}
-    instructions.each do |i|
-      i_by_address[i[:offset]] = i
-    end
+  def do_refs(operator, operands)
+    refs = []
 
-    # Deal with jumps / xrefs / etc (note: this isn't really architecture-specific)
-    0.upto(instructions.length - 1) do |i|
-      instruction = instructions[i]
+    # If it's not a mandatory jump, it references the next address
+#    if(returns?(operator))
+#      if(!instructions[i+1].nil?)
+#        refs << instructions[i+1][:offset]
+#      end
+#    end
 
-      refs = []
-      operator = instruction[:instruction][:operator]
-      operand = instruction[:instruction][:operands][0]
+    # If it's a jump of any kind (with an immediate destination), fill in the ref
+#    if((jump?(operator)) && operand[:type] == 'immediate')
+#      refs << operand[:value]
+#    end
 
-      # If it's not a mandatory jump, it references the next address
-      if(returns?(operator))
-        if(!instructions[i+1].nil?)
-          refs << instructions[i+1][:offset]
-        end
-      end
-
-      # If it's a jump of any kind (with an immediate destination), fill in the ref
-      if((jump?(operator)) && operand[:type] == 'immediate')
-        refs << operand[:value]
-      end
-
-      # Do Xrefs for each of the refs we just found
-      refs.each do |r|
-        if(!i_by_address[r].nil?)
-          i_by_address[r][:xrefs] << instruction[:offset]
-        end
-      end
-
-      instructions[i][:refs] = refs
-    end
+    return refs
   end
 end

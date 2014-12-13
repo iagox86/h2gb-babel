@@ -40,6 +40,10 @@ class BabelUiWorkspace
       end
     end
 
+    workspace_ui.register_command("dis", "Shows disassembly") do |opts, optvar|
+      @workspace.print
+    end
+
     loop do
       workspace_ui.go()
     end

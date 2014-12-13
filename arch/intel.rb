@@ -2,6 +2,9 @@ require 'metasm'
 require 'arch/arch'
 
 class Intel < Arch
+  X86 = "x86"
+  X64 = "x64"
+
   # Basically, these are instructions from which execution will never return
   MANDATORY_JUMPS = [ 'jmp' ]
 
@@ -9,46 +12,42 @@ class Intel < Arch
   DOESNT_RETURN = [ 'ret', 'retn' ]
 
   # These are instructions that may or may not return
-  OPTIONAL_JUMPS = [ 'jo', 'jno', 'js', 'jns', 'je', 'jz', 'jne', 'jnz', 'jb', 'jnae', 'jc', 'jnb', 'jae', 'jnc', 'jbe', 'jna', 'ja', 'jnbe', 'jl', 'jnge', 'jge', 'jnl', 'jle', 'jng', 'jg', 'jnle', 'jp', 'jpe', 'jnp', 'jpo', 'jcxz', 'jecxz' ]
+  OPTIONAL_JUMPS = [ "jo", "jno", "js", "jns", "je", "jz", "jne", "jnz", "jb", "jnae", "jc", "jnb", "jae", "jnc", "jbe", "jna", "ja", "jnbe", "jl", "jnge", "jge", "jnl", "jle", "jng", "jg", "jnle", "jp", "jpe", "jnp", "jpo", "jcxz", "jecxz" ]
 
   # Registers that affect the stack
   STACK_REGISTERS = [ 'esp', 'rsp' ]
 
-  def get_stack_change(instruction)
-    op = instruction[:operator]
-    op1 = instruction[:operands][0]
-    op2 = instruction[:operands][1]
-
-    if(op == 'push')
-      return -self.wordsize / 8
+  def get_stack_change(operator, operand1, operand2)
+    if(operator == 'push')
+      return -@wordsize / 8
     end
 
-    if(op == 'pop')
-      return self.wordsize / 8
+    if(operator == 'pop')
+      return @wordsize / 8
     end
 
-    if(op == 'pusha')
-      return -(((self.wordsize / 8) / 2) * 8)
+    if(operator == 'pusha')
+      return -(((@wordsize / 8) / 2) * 8)
     end
 
-    if(op == 'popa')
-      return (((self.wordsize / 8) / 2) * 8)
+    if(operator == 'popa')
+      return (((@wordsize / 8) / 2) * 8)
     end
 
-    if(op == 'pushad')
-      return -((self.wordsize / 8) * 8)
+    if(operator == 'pushad')
+      return -((@wordsize / 8) * 8)
     end
 
-    if(op == 'popad')
-      return ((self.wordsize / 8) * 8)
+    if(operator == 'popad')
+      return ((@wordsize / 8) * 8)
     end
 
-    if(!op1.nil? && op1[:type] == 'register' && STACK_REGISTERS.index(op1[:value]))
-      if(!op2.nil? && op2[:type] == 'immediate')
-        value = op2[:value]
-        if(op == 'add')
+    if(!operand1.nil? && operand1[:type] == 'register' && STACK_REGISTERS.index(operand1[:value]))
+      if(!operand2.nil? && operand2[:type] == 'immediate')
+        value = operand2[:value]
+        if(operator == 'add')
           return value
-        elsif(op == 'sub')
+        elsif(operator == 'sub')
           return -value
         end
       end
@@ -57,8 +56,20 @@ class Intel < Arch
     return 0
   end
 
-  def initialize(data)
-    super(data)
+  def initialize(data, cpu, base)
+    @decoder = Metasm::EncodedData.new(data)
+
+    if(cpu == X86)
+      @cpu = Metasm::X86.new()
+      @wordsize = 32
+    elsif(cpu == X64)
+      @cpu = Metasm::X64_64.new()
+      @wordsize = 64
+    else
+      raise(Exception, "Unknown CPU: #{cpu}")
+    end
+
+    @base = base
   end
 
   def mandatory_jump?(i)
@@ -73,100 +84,78 @@ class Intel < Arch
     return !(DOESNT_RETURN.index(i).nil?)
   end
 
-  def disassemble_intel(cpu, base)
-    d = Metasm::EncodedData.new(@data)
-    @instructions = []
+  def disassemble(address)
+    @decoder.ptr = address
+    instruction = @cpu.decode_instruction(@decoder, @decoder.ptr + @base)
 
-    0.upto(@data.length - 1) do |i|
-      puts("#{i} / #{@data.length - 1}") if((i % 71) == 0)
-
-      d.ptr = i
-      instruction = cpu.decode_instruction(d, d.ptr + base)
-
-      if(instruction.nil?)
-        bytes = @data[i, 1]
-        offset = i
-        instruction = {
-          :operator => "<unknown>",
-          :operands => []
-        }
-      else
-        bytes = @data[i, instruction.bin_length]
-        offset = i
-        instruction = instruction.instruction
-
-        operands = []
-        instruction.args.each do |arg|
-          if(arg.is_a?(Metasm::Expression))
-            operands << {
-              :type => 'immediate',
-              :value => ("%s%s%s" % [arg.lexpr || '', arg.op || '', arg.rexpr || '']).to_i()
-            }
-          elsif(arg.is_a?(Metasm::Ia32::Reg))
-            operands << {
-              :type => 'register',
-              :value => arg.to_s,
-              :regsize => arg.sz,
-              :regnum => arg.val,
-            }
-          elsif(arg.is_a?(Metasm::Ia32::ModRM))
-            operands << {
-              :type => 'memory',
-              :value => arg.symbolic.to_s(),
-
-              :segment         => arg.seg,
-              :memsize         => arg.sz,
-              :base_register   => arg.i.to_s(),
-              :multiplier      => arg.s || 1,
-              :offset          => arg.b.to_s(),
-              :immediate       => arg.imm.nil? ? 0 : arg.imm.rexpr,
-            }
-          elsif(arg.is_a?(Metasm::Ia32::SegReg))
-            operands << {
-              :type => 'register',
-              :value => arg.to_s()
-            }
-          elsif(arg.is_a?(Metasm::Ia32::FpReg))
-            operands << {
-              :type => "unknown[1]",
-              :value => arg.to_s()
-            }
-          elsif(arg.is_a?(Metasm::Ia32::SimdReg))
-            operands << {
-              :type => 'register',
-              :value => arg.to_s()
-            }
-          elsif(arg.is_a?(Metasm::Ia32::Farptr))
-            operands << {
-              :type => "farptr",
-              :value => arg.to_s()
-            }
-          else
-            puts("Unknown argument type:")
-            puts(arg.class)
-            puts(arg)
-
-            raise(NotImplementedError)
-          end
-        end
-
-        instruction = {
-          :operator => instruction.opname,
-          :operands => operands,
-        }
-      end
-
-      result = {
-        :offset       => i + base,
-        :raw          => bytes,
-        :operator     => instruction[:operator],
-        :operands     => instruction[:operands],
-        :stack_delta  => get_stack_change(instruction) || 0,
-      }
-
-      @instructions[i + base] = result
+    if(instruction.nil?)
+      return nil
     end
 
-    return @instructions
+    operands = []
+    instruction.instruction.args.each do |arg|
+      if(arg.is_a?(Metasm::Expression))
+        operands << {
+          :type => 'immediate',
+          :value => ("%s%s%s" % [arg.lexpr || '', arg.op || '', arg.rexpr || '']).to_i()
+        }
+      elsif(arg.is_a?(Metasm::Ia32::Reg))
+        operands << {
+          :type => 'register',
+          :value => arg.to_s,
+          :regsize => arg.sz,
+          :regnum => arg.val,
+        }
+      elsif(arg.is_a?(Metasm::Ia32::ModRM))
+        operands << {
+          :type => 'memory',
+          :value => arg.symbolic.to_s(),
+
+          :segment         => arg.seg,
+          :memsize         => arg.sz,
+          :base_register   => arg.i.to_s(),
+          :multiplier      => arg.s || 1,
+          :offset          => arg.b.to_s(),
+          :immediate       => arg.imm.nil? ? 0 : arg.imm.rexpr,
+        }
+      elsif(arg.is_a?(Metasm::Ia32::SegReg))
+        operands << {
+          :type => 'register',
+          :value => arg.to_s()
+        }
+      elsif(arg.is_a?(Metasm::Ia32::FpReg))
+        operands << {
+          :type => "unknown[1]",
+          :value => arg.to_s()
+        }
+      elsif(arg.is_a?(Metasm::Ia32::SimdReg))
+        operands << {
+          :type => 'register',
+          :value => arg.to_s()
+        }
+      elsif(arg.is_a?(Metasm::Ia32::Farptr))
+        operands << {
+          :type => "farptr",
+          :value => arg.to_s()
+        }
+      else
+        puts("Unknown argument type:")
+        puts(arg.class)
+        puts(arg)
+
+        raise(NotImplementedError)
+      end
+    end
+
+    return {
+      :address    => address,
+      :type       => "instruction",
+      :length     => instruction.bin_length,
+      :value      => instruction.to_s,
+      :details    => {
+#        :stack_delta => (get_stack_change(instruction.instruction) || 0)
+      },
+      :references => do_refs(instruction.instruction.opname, operands),
+    }
   end
 end
