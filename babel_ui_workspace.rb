@@ -44,6 +44,33 @@ class BabelUiWorkspace
       @workspace.print
     end
 
+    undo_parser = Trollop::Parser.new do
+      banner("Undo the last action")
+      opt :s, "Only undo a single step (instead of the last 'full' action)"
+    end
+    workspace_ui.register_command("undo", undo_parser) do |opts, optvar|
+      params = {}
+      if(opts[:s])
+        params[:step] = true
+      end
+      @workspace.undo(params)
+      @workspace.save()
+    end
+
+    redo_parser = Trollop::Parser.new do
+      banner("Redo the last action")
+      opt :s, "Only redo a single step (instead of the last 'full' action)"
+    end
+    workspace_ui.register_command("redo", redo_parser) do |opts, optvar|
+      params = {}
+      if(opts[:s])
+        params[:step] = true
+      end
+      @workspace.redo(params)
+      @workspace.save()
+    end
+
+
     loop do
       workspace_ui.go()
     end
