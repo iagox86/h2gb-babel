@@ -41,13 +41,27 @@ class Analyzer
       )
 
       # Do the actual disassembly
+      queue = [file[:header][:entrypoint]]
+
       arch = Intel.new(segment[:data], Intel::X86, segment[:address])
       addr = 0
-      nodes = []
-      while(addr < segment[:data].length) do
+      nodes = {}
+
+      while(queue.length > 0)
+        puts("Queue: #{queue.map() { |a| "%04x" % a }.join(", ")}")
+
+        # Get the address
+        addr = queue.shift()
+
+        # Check if it's already completed (TODO: There's probably a better way)
+        if(nodes[addr])
+          next
+        end
+
+        # Disassemble the address
         dis = arch.disassemble(addr)
 
-        nodes << {
+        nodes[addr] = {
           :address    => addr,
           :type       => dis[:type],
           :length     => dis[:length],
@@ -56,10 +70,11 @@ class Analyzer
           :refs       => dis[:references]
         }
 
-        addr += dis[:length]
+        # Queue up its references
+        queue += dis[:references]
       end
 
-      workspace.new_nodes(segment[:name], nodes)
+      workspace.new_nodes(segment[:name], nodes.values)
     end
   end
 end
