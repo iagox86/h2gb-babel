@@ -773,7 +773,6 @@ class Test
     title("Creating an overlapping 32-bit node")
     result = workspace.new_node('s2', 0x00000002, 'dword2', 4, 'value2', { :test => 321, :test2 => '654' }, [])
     assert_hash(result['s2'][:nodes], {
-      # TODO: Undefined nodes shouldn't return nil for refs
       0x0000 => { :type => 'undefined', :refs => [],  :xrefs => [] },
       0x0001 => { :type => 'undefined', :refs => [],  :xrefs => [] },
       0x0002 => { :type => 'dword2',    :refs => [],  :xrefs => [] },

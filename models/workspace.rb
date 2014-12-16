@@ -238,15 +238,21 @@ class Workspace < Model
     segments = get_segments(nil, :with_nodes => true, :with_data => true)
 
     segments.each_pair do |name, segment|
-      segment[:nodes].each_pair do |address, node|
+      last_address = nil
+      segment[:nodes].keys.sort.each do |address|
+        node = segment[:nodes][address]
+
         raw = node[:raw].unpack("H*").pop
         raw = raw + (" " * (12 - raw.length()))
 
         xrefs = ''
+        node[:xrefs].delete(last_address)
         if(node[:xrefs] && node[:xrefs].length > 0)
           xrefs = node[:xrefs] ? (' XREFS: %s' % node[:xrefs].map() { |x| '0x%x' % x }.join(", ")) : ""
         end
         puts("%s:%08x %s %s %s" % [segment[:name], node[:address], raw, node[:value], xrefs])
+
+        last_address = address
       end
     end
   end
