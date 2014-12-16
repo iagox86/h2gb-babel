@@ -792,7 +792,7 @@ class Test
     }, "nodes7", true)
 
     title("Undoing the third node")
-    result = workspace.undo(:with_nodes => true)
+    result = workspace.undo(:with_nodes => true) # TODO: why with_nodes
     assert_hash(result['s2'][:nodes], {
       0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [0x0004] },
       0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [0x0000] },

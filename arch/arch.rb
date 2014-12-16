@@ -32,20 +32,18 @@ class Arch
   end
 
   # TODO: This needs to go at a higher level, it doesn't belong in the disassembler
-  def do_refs(operator, operands)
+  def do_refs(address, length, operator, operands)
     refs = []
 
     # If it's not a mandatory jump, it references the next address
-#    if(returns?(operator))
-#      if(!instructions[i+1].nil?)
-#        refs << instructions[i+1][:offset]
-#      end
-#    end
+    if(returns?(operator))
+      refs << (address + length)
+    end
 
     # If it's a jump of any kind (with an immediate destination), fill in the ref
-#    if((jump?(operator)) && operand[:type] == 'immediate')
-#      refs << operand[:value]
-#    end
+    if((jump?(operator)) && operands[0] && operands[0][:type] == 'immediate')
+      refs << operands[0][:value]
+    end
 
     return refs
   end

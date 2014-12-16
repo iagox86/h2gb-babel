@@ -102,7 +102,6 @@ class Workspace < Model
     return post_stuff('/workspaces/:workspace_id/redo', params.merge({:workspace_id => self.o[:workspace_id]})).o[:segments]
   end
 
-  # TODO: Add a free-form details field to segments
   def new_segment(name, address, data, details = {}, params = {})
     result = post_stuff("/workspaces/:workspace_id/new_segments", {
       :workspace_id      => self.o[:workspace_id],
@@ -244,8 +243,8 @@ class Workspace < Model
         raw = raw + (" " * (12 - raw.length()))
 
         xrefs = ''
-        if(node[:xrefs])
-#          xrefs = node[:xrefs] ? (' XREFS: %s' % node[:xrefs].map() { |x| '0x%x' % x }.join(", ")) : ""
+        if(node[:xrefs] && node[:xrefs].length > 0)
+          xrefs = node[:xrefs] ? (' XREFS: %s' % node[:xrefs].map() { |x| '0x%x' % x }.join(", ")) : ""
         end
         puts("%s:%08x %s %s %s" % [segment[:name], node[:address], raw, node[:value], xrefs])
       end

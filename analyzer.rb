@@ -53,7 +53,7 @@ class Analyzer
           :length     => dis[:length],
           :value      => dis[:value],
           :details    => dis[:details],
-          :references => dis[:references]
+          :refs       => dis[:references]
         }
 
         addr += dis[:length]

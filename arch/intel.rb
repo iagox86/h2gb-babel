@@ -155,7 +155,7 @@ class Intel < Arch
       :details    => {
 #        :stack_delta => (get_stack_change(instruction.instruction) || 0)
       },
-      :references => do_refs(instruction.instruction.opname, operands),
+      :references => do_refs(address, instruction.bin_length, instruction.instruction.opname, operands),
     }
   end
 end
