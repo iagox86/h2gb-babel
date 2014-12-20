@@ -268,14 +268,14 @@ class Test
     start_revision = workspace.o[:revision]
 
     title("Creating a segment")
-    segments = workspace.new_segment('create_segment_1', 0x00000000, "AAAAAAAA")
+    segments = workspace.new_segment('create_segment_1', 0x00000000, "AAAAAAAA", {})
     assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
     assert_hash(segments, {
       'create_segment_1' => { :address => 0, :data => nil},
     }, "create_segment_1")
 
     title("Creating another segment (only the new segment should be returned)")
-    segments = workspace.new_segment('create_segment_2', 0x00000000, "AAAAAAAA")
+    segments = workspace.new_segment('create_segment_2', 0x00000000, "AAAAAAAA", {})
     assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
     assert_hash(segments, {
       'create_segment_2' => { :address => 0, :data => nil},
@@ -298,14 +298,14 @@ class Test
     start_revision = workspace.o[:revision]
 
     title("Creating a segment")
-    segments = workspace.new_segment('delete_segment_1', 0x00000000, "AAAAAAAA")
+    segments = workspace.new_segment('delete_segment_1', 0x00000000, "AAAAAAAA", {})
     assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
     assert_hash(segments, {
       'delete_segment_1' => { :address => 0, :data => nil},
     }, "delete_segment_1")
 
     title("Creating another segment (only the new segment should be returned)")
-    segments = workspace.new_segment('delete_segment_2', 0x00000000, "AAAAAAAA")
+    segments = workspace.new_segment('delete_segment_2', 0x00000000, "AAAAAAAA", {})
     assert_equal(segments.length, 1, "Checking if the right number of segments were returned")
     assert_hash(segments, {
       'delete_segment_2' => { :address => 0, :data => nil},
@@ -337,7 +337,7 @@ class Test
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
-    segments = workspace.new_segment('s1', 0x00000000, "AAAAAAAA")
+    segments = workspace.new_segment('s1', 0x00000000, "AAAAAAAA", {})
 
     title("Find segments (w/ default)")
 
@@ -415,7 +415,7 @@ class Test
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
-    segments = workspace.new_segment('s1', 0x00000000, "AAAAAAAA")
+    segments = workspace.new_segment('s1', 0x00000000, "AAAAAAAA", {})
 
     title("Verifying the undo log")
     assert_hash(workspace.get_undo_log, {
@@ -716,7 +716,7 @@ class Test
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
-    segment = workspace.new_segment('s2', 0x0000, "ABCDEFGH")
+    segment = workspace.new_segment('s2', 0x0000, "ABCDEFGH", {})
     assert_equal(segment.keys.length(), 1, "Checking if only the new segment exists")
     assert_not_nil(segment['s2'], "Checking that the segment was created")
 
@@ -935,7 +935,7 @@ class Test
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
-    segment = workspace.new_segment('A', 0x1000, "1111222233334444")
+    segment = workspace.new_segment('A', 0x1000, "1111222233334444", {})
     assert_type(segment, Hash, "Checking if the segment returned properly")
     result = workspace.new_nodes('A', [
       {:address => 0x1000, :type => 'defined', :length => 4, :value => 'AAAA', :refs => []},
@@ -984,7 +984,7 @@ class Test
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
-    segment = workspace.new_segment('X', 0x0, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    segment = workspace.new_segment('X', 0x0, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", {})
     assert_type(segment, Hash, "Checking if the segment returned properly")
 
     result = workspace.new_nodes('X', [
@@ -1135,9 +1135,9 @@ class Test
     workspace.reset()
 
     # Create some segments
-    workspace.new_segment('s1', 0x0, "AAAAAAAAAAAAAAAA")
-    workspace.new_segment('s2', 0x1000, "BBBBBBBBBBBBBBBB")
-    workspace.new_segment('s3', 0x1000, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
+    workspace.new_segment('s1', 0x0, "AAAAAAAAAAAAAAAA", {})
+    workspace.new_segment('s2', 0x1000, "BBBBBBBBBBBBBBBB", {})
+    workspace.new_segment('s3', 0x1000, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", {})
 
     # Create a node in s1 that references a node in s2 and s3
     result = workspace.new_node('s1', 0x0000, 'dword0', 4, 'value0', { }, [0x1000])
@@ -1217,13 +1217,37 @@ class Test
   end
 
   def Test.test_new_segment_xrefs()
-    # TODO
-    # Make a segment
-    # Make a Xref
-    # Make a new segment, make sure the xref is still there
-    # Delete the first segment
-    # Make sure the Xref is gone from the second segment
-    assert(false, "TODO: Make test_new_segment_xrefs work!!")
+    title("Testing cross-segment cross references with new segments")
+    workspace = Workspace.find(@@workspace_id)
+    workspace.reset()
+
+    # Create some segments
+    workspace.new_segment('s1', 0x0, "AAAAAAAAAAAAAAAA", {})
+    workspace.new_segment('s2', 0x1000, "BBBBBBBBBBBBBBBB", {})
+
+    # Create a node in s1 that references a node in s2 and s3
+    result = workspace.new_node('s1', 0x0000, 'dword0', 4, 'value0', { }, [0x1000])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0000 => { :type => 'dword0',    :refs => [0x1000], :xrefs => []       },
+        },
+      },
+      's2' => {
+        :nodes => {
+          0x1000 => { :type => 'undefined', :refs => [],       :xrefs => [0x0000] },
+        },
+      },
+    }, 'xnewsegment1', true)
+
+    result = workspace.new_segment('s3', 0x1000, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", {}, :with_nodes => true)
+    assert_hash(result, {
+      's3' => {
+        :nodes => {
+          0x1000 => { :type => 'undefined', :refs => [],       :xrefs => [0x0000] },
+        },
+      },
+    }, 'xnewsegment1', true)
   end
 
   def Test.test_data_xrefs()
@@ -1326,8 +1350,8 @@ class Test
       test_xrefs()
       test_segment_details()
       test_cross_segment_xrefs()
-      #test_new_segment_xrefs()
-      #test_data_xrefs()
+      test_new_segment_xrefs()
+      test_data_xrefs()
 
       # Tests for everything
       test_properties()

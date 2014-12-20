@@ -102,7 +102,7 @@ class Workspace < Model
     return post_stuff('/workspaces/:workspace_id/redo', params.merge({:workspace_id => self.o[:workspace_id]})).o[:segments]
   end
 
-  def new_segment(name, address, data, details = {}, params = {})
+  def new_segment(name, address, data, details, params = {})
     result = post_stuff("/workspaces/:workspace_id/new_segments", {
       :workspace_id      => self.o[:workspace_id],
       :segments     => [
