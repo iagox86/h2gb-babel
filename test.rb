@@ -25,6 +25,8 @@ class Test
 
       puts(" -- FAILED: #{test} #{fail ? " (#{fail})" : ""}")
 
+      exit
+
       return false
     end
   end
@@ -1128,6 +1130,108 @@ class Test
     }, "segment_details_1")
   end
 
+  def Test.test_cross_segment_xrefs()
+    title("Testing cross-segment cross references")
+    workspace = Workspace.find(@@workspace_id)
+    workspace.reset()
+
+    # Create some segments
+    workspace.new_segment('s1', 0x0, "AAAAAAAAAAAAAAAA")
+    workspace.new_segment('s2', 0x1000, "BBBBBBBBBBBBBBBB")
+    workspace.new_segment('s3', 0x1000, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
+
+    # Create a node in s1 that references a node in s2 and s3
+    result = workspace.new_node('s1', 0x0000, 'dword0', 4, 'value0', { }, [0x1000])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0000 => { :type => 'dword0',    :refs => [0x1000], :xrefs => []       },
+        },
+      },
+      's2' => {
+        :nodes => {
+          0x1000 => { :type => 'undefined', :refs => [],       :xrefs => [0x0000] },
+        },
+      },
+      's3' => {
+        :nodes => {
+          0x1000 => { :type => 'undefined', :refs => [],       :xrefs => [0x0000] },
+        }
+      },
+    }, 'xsegment1', true)
+
+    # Create a node in s2 that references s1
+    result = workspace.new_node('s2', 0x1000, 'dword1000', 4, 'value1000', { }, [0x0])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0000 => { :type => 'dword0',    :refs => [0x1000], :xrefs => [0x1000] },
+        }
+      },
+      's2' => {
+        :nodes => {
+          0x1000 => { :type => 'dword1000', :refs => [0x0000], :xrefs => [0x0000] },
+        },
+      },
+    }, 'xsegment2', true)
+
+    # Create a node in s3 that references s1 and s2
+    result = workspace.new_node('s3', 0x1004, 'dword1004', 4, 'value1004', { }, [0x0000, 0x1008])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0000 => { :type => 'dword0',    :refs => [0x1000], :xrefs => [0x1000, 0x1004] }, # TODO: Add the segment name to the xrefs
+        }
+      },
+      's2' => {
+        :nodes => {
+          0x1008 => { :type => 'undefined', :refs => [], :xrefs => [0x1004] },
+        },
+      },
+      's3' => {
+        :nodes => {
+          0x1004 => { :type => 'dword1004', :refs => [0x0000, 0x1008], :xrefs => [] },
+          0x1008 => { :type => 'undefined', :refs => [],               :xrefs => [0x1004] },
+        },
+      },
+    }, 'xsegment3', true)
+
+    # Delete the node at s1:0x0000, which should delete the references in the other nodes
+    result = workspace.delete_nodes('s1', [0])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0000 => { :type => 'undefined', :refs => [], :xrefs => [0x1000, 0x1004] },
+        }
+      },
+      's2' => {
+        :nodes => {
+          0x1000 => { :type => 'dword1000', :refs => [0x0000], :xrefs => [] },
+        },
+      },
+      's3' => {
+        :nodes => {
+          0x1000 => { :type => 'undefined', :refs => [],       :xrefs => [] },
+        },
+      },
+    }, 'xsegment3', true)
+  end
+
+  def Test.test_new_segment_xrefs()
+    # TODO
+    # Make a segment
+    # Make a Xref
+    # Make a new segment, make sure the xref is still there
+    # Delete the first segment
+    # Make sure the Xref is gone from the second segment
+    assert(false, "TODO: Make test_new_segment_xrefs work!!")
+  end
+
+  def Test.test_data_xrefs()
+    # TODO
+    assert(false, "TODO: Make test_data_xrefs work!!")
+  end
+
   def Test.test_properties()
     binary = Binary.find(@@binary_id)
 
@@ -1204,27 +1308,30 @@ class Test
     begin
       # Tests for binaries
       test_create_binary() # Mandatory (sets @@binary_id)
-      test_get_all_binaries()
-      test_find_binary()
-      test_save_binary()
+      #test_get_all_binaries()
+      #test_find_binary()
+      #test_save_binary()
 
       # Tests for workspaces
       test_create_workspace() # Mandatory (sets @@workspace_id)
-      test_get_all_workspaces()
-      test_find_workspace()
-      test_update_workspace()
-      test_create_segment()
-      test_delete_segment()
-      test_find_segments()
-      test_undo()
-      test_nodes()
-      test_create_multiple_segments()
-      test_create_multiple_nodes()
+      #test_get_all_workspaces()
+      #test_find_workspace()
+      #test_update_workspace()
+      #test_create_segment()
+      #test_delete_segment()
+      #test_find_segments()
+      #test_undo()
+      #test_nodes()
+      #test_create_multiple_segments()
+      #test_create_multiple_nodes()
       test_xrefs()
-      test_segment_details()
+      #test_segment_details()
+      test_cross_segment_xrefs()
+      #test_new_segment_xrefs()
+      #test_data_xrefs()
 
       # Tests for everything
-      test_properties()
+      #test_properties()
 
       puts("ALL DONE! EVERYTHING IS GOOD!!!")
     rescue Exception => e
@@ -1237,7 +1344,6 @@ class Test
       puts("Press 'enter' to continue")
       gets()
     ensure
-
       puts()
       puts("CLEANING UP")
       puts()

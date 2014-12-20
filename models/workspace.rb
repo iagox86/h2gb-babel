@@ -171,7 +171,7 @@ class Workspace < Model
     }.merge(params)).o[:segments]
   end
 
-  def delete_nodes(segment, addresses)
+  def delete_nodes(segment, addresses, params = {})
     if(!addresses.is_a?(Array))
       addresses = [addresses]
     end
@@ -180,7 +180,7 @@ class Workspace < Model
       :workspace_id => self.o[:workspace_id],
       :segment => segment,
       :addresses => addresses,
-    }).o[:segments]
+    }.merge(params)).o[:segments]
   end
 
   def get_all_segments(params = {})
