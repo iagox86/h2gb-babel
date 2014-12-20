@@ -25,8 +25,7 @@ class Test
 
       puts(" -- FAILED: #{test} #{fail ? " (#{fail})" : ""}")
 
-      exit
-
+      #exit
       return false
     end
   end
@@ -1308,30 +1307,30 @@ class Test
     begin
       # Tests for binaries
       test_create_binary() # Mandatory (sets @@binary_id)
-      #test_get_all_binaries()
-      #test_find_binary()
-      #test_save_binary()
+      test_get_all_binaries()
+      test_find_binary()
+      test_save_binary()
 
       # Tests for workspaces
       test_create_workspace() # Mandatory (sets @@workspace_id)
-      #test_get_all_workspaces()
-      #test_find_workspace()
-      #test_update_workspace()
-      #test_create_segment()
-      #test_delete_segment()
-      #test_find_segments()
-      #test_undo()
-      #test_nodes()
-      #test_create_multiple_segments()
-      #test_create_multiple_nodes()
+      test_get_all_workspaces()
+      test_find_workspace()
+      test_update_workspace()
+      test_create_segment()
+      test_delete_segment()
+      test_find_segments()
+      test_undo()
+      test_nodes()
+      test_create_multiple_segments()
+      test_create_multiple_nodes()
       test_xrefs()
-      #test_segment_details()
+      test_segment_details()
       test_cross_segment_xrefs()
       #test_new_segment_xrefs()
       #test_data_xrefs()
 
       # Tests for everything
-      #test_properties()
+      test_properties()
 
       puts("ALL DONE! EVERYTHING IS GOOD!!!")
     rescue Exception => e

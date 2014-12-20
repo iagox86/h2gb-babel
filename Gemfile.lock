@@ -1,42 +1,16 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    active_rest_client (1.0.4)
-      activesupport
-      faraday
-      multi_json
-    activesupport (4.1.6)
-      i18n (~> 0.6, >= 0.6.9)
-      json (~> 1.7, >= 1.7.7)
-      minitest (~> 5.1)
-      thread_safe (~> 0.1)
-      tzinfo (~> 1.1)
-    faraday (0.9.0)
-      multipart-post (>= 1.2, < 3)
-    httmultiparty (0.3.14)
-      httparty (>= 0.7.3)
-      mimemagic
-      multipart-post
     httparty (0.13.1)
       json (~> 1.8)
       multi_xml (>= 0.5.2)
-    i18n (0.6.11)
     json (1.8.1)
     metasm (1.0.1)
-    mimemagic (0.2.1)
-    minitest (5.4.2)
-    multi_json (1.10.1)
     multi_xml (0.5.5)
-    multipart-post (2.0.0)
-    thread_safe (0.3.4)
-    tzinfo (1.2.2)
-      thread_safe (~> 0.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  active_rest_client
-  httmultiparty
   httparty
   metasm
