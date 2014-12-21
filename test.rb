@@ -25,7 +25,6 @@ class Test
 
       puts(" -- FAILED: #{test} #{fail ? " (#{fail})" : ""}")
 
-      #exit
       return false
     end
   end
@@ -736,11 +735,11 @@ class Test
     }, 'nodes1', true)
 
     title("Creating a 32-bit node")
-    result = workspace.new_node('s2', 0x0000, 'dword0', 4, 'value0', { :test => '123', :test2 => 456 }, [0x0004])
+    result = workspace.new_node('s2', 0x0000, 'dword0', 4, 'value0', { :test => '123', :test2 => 456 }, [{:address => 0x0004}])
     assert_hash(result, {
       's2' => {
         :nodes => {
-          0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => []       },
+          0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => []       },
           0x0004 => { :type => 'undefined', :refs => [],       :xrefs => [{:segment => 's2', :address => 0x0000}] },
         }
       }
@@ -749,26 +748,26 @@ class Test
     title("Making sure there are exactly 5 nodes present")
     segment = workspace.get_segment('s2', :with_nodes => true, :with_data => true)
     assert_hash(segment[:nodes], {
-      0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [] },
-      0x0004 => { :type => 'undefined', :refs => [],       :xrefs => [{:segment => 's2', :address => 0x0000}] },
-      0x0005 => { :type => 'undefined', :refs => [],       :xrefs => [] },
-      0x0006 => { :type => 'undefined', :refs => [],       :xrefs => [] },
-      0x0007 => { :type => 'undefined', :refs => [],       :xrefs => [] },
+      0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => [] },
+      0x0004 => { :type => 'undefined', :refs => [],                     :xrefs => [{:segment => 's2', :address => 0x0000}] },
+      0x0005 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
+      0x0006 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
+      0x0007 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
     }, "nodes3", true)
 
     title("Creating a non-overlapping 32-bit node")
-    result = workspace.new_node('s2', 0x0004, 'dword4', 4, 'value4', { :test => 321, :test2 => '654' }, [0x0000])
+    result = workspace.new_node('s2', 0x0004, 'dword4', 4, 'value4', { :test => 321, :test2 => '654' }, [{:address => 0x0000}])
     segment = result['s2']
     assert_hash(segment[:nodes], {
-      0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [{:segment => 's2', :address => 0x0004}] },
-      0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [{:segment => 's2', :address => 0x0000}] },
+      0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => [{:segment => 's2', :address => 0x0004}] },
+      0x0004 => { :type => 'dword4',    :refs => [{:address => 0x0000}], :xrefs => [{:segment => 's2', :address => 0x0000}] },
     }, "nodes4", true)
 
     title("Making sure both nodes are in good shape")
     segment = workspace.get_segment('s2', :with_nodes => true, :with_data => true)
     assert_hash(segment[:nodes], {
-      0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [{:segment => 's2', :address => 0x0004}] },
-      0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [{:segment => 's2', :address => 0x0000}] },
+      0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => [{:segment => 's2', :address => 0x0004}] },
+      0x0004 => { :type => 'dword4',    :refs => [{:address => 0x0000}], :xrefs => [{:segment => 's2', :address => 0x0000}] },
     }, "nodes5", true)
 
     title("Creating an overlapping 32-bit node")
@@ -794,27 +793,27 @@ class Test
     title("Undoing the third node")
     result = workspace.undo()
     assert_hash(result['s2'][:nodes], {
-      0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [{:segment => 's2', :address => 0x0004}] },
-      0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [{:segment => 's2', :address => 0x0000}] },
+      0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => [{:segment => 's2', :address => 0x0004}] },
+      0x0004 => { :type => 'dword4',    :refs => [{:address => 0x0000}], :xrefs => [{:segment => 's2', :address => 0x0000}] },
     }, "nodes8", true)
 
     title("Undoing the second node")
     result = workspace.undo(:with_nodes => true)
     assert_hash(result['s2'][:nodes], {
-      0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [] },
-      0x0004 => { :type => 'undefined', :refs => [],       :xrefs => [{:segment => 's2', :address => 0x0000}] },
-      0x0005 => { :type => 'undefined', :refs => [],       :xrefs => [] },
-      0x0006 => { :type => 'undefined', :refs => [],       :xrefs => [] },
-      0x0007 => { :type => 'undefined', :refs => [],       :xrefs => [] },
+      0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => [] },
+      0x0004 => { :type => 'undefined', :refs => [],                     :xrefs => [{:segment => 's2', :address => 0x0000}] },
+      0x0005 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
+      0x0006 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
+      0x0007 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
     }, "nodes9", true)
 
     segment = workspace.get_segment('s2', :with_nodes => true)
     assert_hash(result['s2'][:nodes], {
-      0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [] },
-      0x0004 => { :type => 'undefined', :refs => [],       :xrefs => [{:segment => 's2', :address => 0x0000}] },
-      0x0005 => { :type => 'undefined', :refs => [],       :xrefs => [] },
-      0x0006 => { :type => 'undefined', :refs => [],       :xrefs => [] },
-      0x0007 => { :type => 'undefined', :refs => [],       :xrefs => [] },
+      0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => [] },
+      0x0004 => { :type => 'undefined', :refs => [],                     :xrefs => [{:segment => 's2', :address => 0x0000}] },
+      0x0005 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
+      0x0006 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
+      0x0007 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
     }, "nodes10", true)
 
     title("Undoing the first node")
@@ -842,32 +841,32 @@ class Test
     title("Redo: creating the first 32-bit node")
     result = workspace.redo(:with_nodes => true)
     assert_hash(result['s2'][:nodes], {
-      0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [] },
+      0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => [] },
       0x0004 => { :type => 'undefined', :refs => [],       :xrefs => [{:segment => 's2', :address => 0x0000}] },
     }, "nodes13", true)
 
     title("Making sure there are exactly 5 nodes present")
     segment = workspace.get_segment('s2', :with_nodes => true, :with_data => true)
     assert_hash(segment[:nodes], {
-      0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [] },
-      0x0004 => { :type => 'undefined', :refs => [],       :xrefs => [{:segment => 's2', :address => 0x0000}] },
-      0x0005 => { :type => 'undefined', :refs => [],       :xrefs => [] },
-      0x0006 => { :type => 'undefined', :refs => [],       :xrefs => [] },
-      0x0007 => { :type => 'undefined', :refs => [],       :xrefs => [] },
+      0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => [] },
+      0x0004 => { :type => 'undefined', :refs => [],                     :xrefs => [{:segment => 's2', :address => 0x0000}] },
+      0x0005 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
+      0x0006 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
+      0x0007 => { :type => 'undefined', :refs => [],                     :xrefs => [] },
     }, "nodes14", true)
 
     title("Redo: creating a non-overlapping 32-bit node")
     result = workspace.redo(:with_data => true)
     assert_hash(result['s2'][:nodes], {
-      0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [{:segment => 's2', :address => 0x0004}] },
-      0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [{:segment => 's2', :address => 0x0000}] },
+      0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => [{:segment => 's2', :address => 0x0004}] },
+      0x0004 => { :type => 'dword4',    :refs => [{:address => 0x0000}], :xrefs => [{:segment => 's2', :address => 0x0000}] },
     }, "nodes15", true)
 
     title("Making sure both nodes are in good shape")
     segment = workspace.get_segment('s2', :with_nodes => true, :with_data => true)
     assert_hash(segment[:nodes], {
-      0x0000 => { :type => 'dword0',    :refs => [0x0004], :xrefs => [{:segment => 's2', :address => 0x0004}] },
-      0x0004 => { :type => 'dword4',    :refs => [0x0000], :xrefs => [{:segment => 's2', :address => 0x0000}] },
+      0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => [{:segment => 's2', :address => 0x0004}] },
+      0x0004 => { :type => 'dword4',    :refs => [{:address => 0x0000}], :xrefs => [{:segment => 's2', :address => 0x0000}] },
     }, "nodes16", true)
 
     title("Redo: creating an overlapping 32-bit node")
@@ -988,105 +987,104 @@ class Test
     assert_type(segment, Hash, "Checking if the segment returned properly")
 
     result = workspace.new_nodes('X', [
-      {:address => 0,  :type => 'defined', :length => 4, :value => 'References 4 and 8',      :refs => [4, 8]},
-      {:address => 4,  :type => 'defined', :length => 4, :value => 'References 0 and itself', :refs => [0, 4]},
-      {:address => 8,  :type => 'defined', :length => 4, :value => 'References all others',   :refs => [0, 4, 8, 12]},
-      {:address => 12, :type => 'defined', :length => 4, :value => 'References 0 and 16',     :refs => [0, 16]},
+      {:address => 0,  :type => 'defined', :length => 4, :value => 'References 4 and 8',      :refs => [{:address => 4}, {:address => 8}]},
+      {:address => 4,  :type => 'defined', :length => 4, :value => 'References 0 and itself', :refs => [{:address => 0}, {:address => 4}]},
+      {:address => 8,  :type => 'defined', :length => 4, :value => 'References all others',   :refs => [{:address => 0}, {:address => 4}, {:address => 8}, {:address => 12}]},
+      {:address => 12, :type => 'defined', :length => 4, :value => 'References 0 and 16',     :refs => [{:address => 0}, {:address => 16}]},
     ])
 
     assert_hash(result['X'][:nodes], {
-      0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [{:address => 4}, {:address => 8}, {:address => 12}]},
-      4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [{:address => 0}, {:address => 4}, {:address => 8}]},
-      8  => {:type => 'defined',   :refs => [0, 4, 8, 12],  :xrefs => [{:address => 0}, {:address => 8}]},
-      12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [{:address => 8}]},
-      16 => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 12}]},
+      0  => {:type => 'defined',   :refs => [{:address => 4}, {:address => 8}],                                     :xrefs => [{:address => 4}, {:address => 8}, {:address => 12}]},
+      4  => {:type => 'defined',   :refs => [{:address => 0}, {:address => 4}],                                     :xrefs => [{:address => 0}, {:address => 4}, {:address => 8}]},
+      8  => {:type => 'defined',   :refs => [{:address => 0}, {:address => 4}, {:address => 8}, {:address => 12}],  :xrefs => [{:address => 0}, {:address => 8}]},
+      12 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 16}],                                    :xrefs => [{:address => 8}]},
+      16 => {:type => 'undefined', :refs => [],                                                                     :xrefs => [{:address => 12}]},
     }, "xrefs1")
 
     title("Creating a new node with xrefs")
     result = workspace.new_nodes('X', [
-      {:address => 0x0010, :type => 'defined', :length => 4, :value => 'References 0 and 12', :refs => [0, 12]},
+      {:address => 0x0010, :type => 'defined', :length => 4, :value => 'References 0 and 12', :refs => [{:address => 0}, {:address => 12}]},
     ])
     assert_hash(result['X'][:nodes], {
-      0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [{:address => 4}, {:address => 8}, {:address => 12}, {:address => 16}]},
-      12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [{:address => 8}, {:address => 16}]},
-      16 => {:type => 'defined',   :refs => [0, 12],        :xrefs => [{:address => 12}]},
+      0  => {:type => 'defined',   :refs => [{:address => 4}, {:address => 8}],         :xrefs => [{:address => 4}, {:address => 8}, {:address => 12}, {:address => 16}]},
+      12 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 16}],        :xrefs => [{:address => 8}, {:address => 16}]},
+      16 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 12}],        :xrefs => [{:address => 12}]},
     }, "xrefs2", true)
 
     title("Deleting a node")
     result = workspace.delete_nodes('X', [0x0008])
     assert_hash(result['X'][:nodes], {
-      0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [{:address => 4}, {:address => 12}, {:address => 16}]},
-      4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [{:address => 0}, {:address => 4}]},
-      8  => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 0}]},
-      9  => {:type => 'undefined', :refs => [],             :xrefs => []},
-      10 => {:type => 'undefined', :refs => [],             :xrefs => []},
-      11 => {:type => 'undefined', :refs => [],             :xrefs => []},
-      12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [{:address => 16}]},
+      0  => {:type => 'defined',   :refs => [{:address => 4}, {:address => 8}],         :xrefs => [{:address => 4}, {:address => 12}, {:address => 16}]},
+      4  => {:type => 'defined',   :refs => [{:address => 0}, {:address => 4}],         :xrefs => [{:address => 0}, {:address => 4}]},
+      8  => {:type => 'undefined', :refs => [],                                         :xrefs => [{:address => 0}]},
+      9  => {:type => 'undefined', :refs => [],                                         :xrefs => []},
+      10 => {:type => 'undefined', :refs => [],                                         :xrefs => []},
+      11 => {:type => 'undefined', :refs => [],                                         :xrefs => []},
+      12 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 16}],        :xrefs => [{:address => 16}]},
     }, "xrefs3", true)
 
     title("Deleting another node")
     result = workspace.delete_nodes('X', [16])
     assert_hash(result['X'][:nodes], {
-      0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [{:address => 4}, {:address => 12}]},
-      12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => []},
-      16 => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 12}]},
-      17 => {:type => 'undefined', :refs => [],             :xrefs => []},
-      18 => {:type => 'undefined', :refs => [],             :xrefs => []},
-      19 => {:type => 'undefined', :refs => [],             :xrefs => []},
+      0  => {:type => 'defined',   :refs => [{:address => 4}, {:address => 8}],         :xrefs => [{:address => 4}, {:address => 12}]},
+      12 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 16}],        :xrefs => []},
+      16 => {:type => 'undefined', :refs => [],                                         :xrefs => [{:address => 12}]},
+      17 => {:type => 'undefined', :refs => [],                                         :xrefs => []},
+      18 => {:type => 'undefined', :refs => [],                                         :xrefs => []},
+      19 => {:type => 'undefined', :refs => [],                                         :xrefs => []},
     }, "xrefs4", true)
 
     title("Undoing the delete")
     result = workspace.undo()
     assert_hash(result['X'][:nodes], {
-      0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [{:address => 4}, {:address => 12}, {:address => 16}]},
-      12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [{:address => 16}]},
-      16 => {:type => 'defined',   :refs => [0, 12],        :xrefs => [{:address => 12}]},
+      0  => {:type => 'defined',   :refs => [{:address => 4}, {:address => 8}],         :xrefs => [{:address => 4}, {:address => 12}, {:address => 16}]},
+      12 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 16}],        :xrefs => [{:address => 16}]},
+      16 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 12}],        :xrefs => [{:address => 12}]},
     }, "xrefs5", true)
 
     title("Re-doing the delete")
     result = workspace.redo()
     assert_hash(result['X'][:nodes], {
-      0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [{:address => 4}, {:address => 12}]},
-      12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => []},
-      16 => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 12}]},
-      17 => {:type => 'undefined', :refs => [],             :xrefs => []},
-      18 => {:type => 'undefined', :refs => [],             :xrefs => []},
-      19 => {:type => 'undefined', :refs => [],             :xrefs => []},
+      0  => {:type => 'defined',   :refs => [{:address => 4}, {:address => 8}],         :xrefs => [{:address => 4}, {:address => 12}]},
+      12 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 16}],        :xrefs => []},
+      16 => {:type => 'undefined', :refs => [],                                         :xrefs => [{:address => 12}]},
+      17 => {:type => 'undefined', :refs => [],                                         :xrefs => []},
+      18 => {:type => 'undefined', :refs => [],                                         :xrefs => []},
+      19 => {:type => 'undefined', :refs => [],                                         :xrefs => []},
     }, "xrefs6", true)
 
     title("Creating another xrefs node that has xrefs on uneven boundaries")
     result = workspace.new_nodes('X', [
-      {:address => 20, :type => 'defined', :length => 4, :value => 'References 2, 4, 10, and 12', :refs => [2, 4, 10, 12]},
+      {:address => 20, :type => 'defined', :length => 4, :value => 'References 2, 4, 10, and 12', :refs => [{:address => 2}, {:address => 4}, {:address => 10}, {:address => 12}]},
     ])
     assert_hash(result['X'][:nodes], {
-      0  => {:type => 'defined',   :refs => [4, 8],         :xrefs => [{:address => 4}, {:address => 12}, {:address => 20}]},
-      4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [{:address => 0}, {:address => 4}, {:address => 20}]},
-      10 => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 20}]},
-      12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [{:address => 20}]},
-      20 => {:type => 'defined',   :refs => [2, 4, 10, 12], :xrefs => []},
+      0  => {:type => 'defined',   :refs => [{:address => 4}, {:address => 8}],         :xrefs => [{:address => 4}, {:address => 12}, {:address => 20}]},
+      4  => {:type => 'defined',   :refs => [{:address => 0}, {:address => 4}],         :xrefs => [{:address => 0}, {:address => 4}, {:address => 20}]},
+      10 => {:type => 'undefined', :refs => [],                                         :xrefs => [{:address => 20}]},
+      12 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 16}],        :xrefs => [{:address => 20}]},
+      20 => {:type => 'defined',   :refs => [{:address => 2}, {:address => 4}, {:address => 10}, {:address => 12}], :xrefs => []},
     }, "xrefs7", true)
 
     title("Deleting a node that has a xref in the middle")
     result = workspace.delete_nodes('X', [0x0000])
     assert_hash(result['X'][:nodes], {
-      0  => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 4}, {:address => 12}]},
-      1  => {:type => 'undefined', :refs => [],             :xrefs => []},
-      2  => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 20}]},
-      3  => {:type => 'undefined', :refs => [],             :xrefs => []},
-
-      4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [{:address => 4}, {:address => 20}]},
-      8  => {:type => 'undefined', :refs => [],             :xrefs => []},
+      0  => {:type => 'undefined', :refs => [],                                 :xrefs => [{:address => 4}, {:address => 12}]},
+      1  => {:type => 'undefined', :refs => [],                                 :xrefs => []},
+      2  => {:type => 'undefined', :refs => [],                                 :xrefs => [{:address => 20}]},
+      3  => {:type => 'undefined', :refs => [],                                 :xrefs => []},
+      4  => {:type => 'defined',   :refs => [{:address => 0}, {:address => 4}], :xrefs => [{:address => 4}, {:address => 20}]},
+      8  => {:type => 'undefined', :refs => [],                                 :xrefs => []},
     }, "xrefs8", true)
 
     title("Re-creating a node that covers a now-undefined node")
     result = workspace.new_nodes('X', [
-      {:address => 8, :type => 'defined', :length => 4, :value => 'References 0, 4, 8, and 12', :refs => [0, 4, 8, 12]},
+      {:address => 8, :type => 'defined', :length => 4, :value => 'References 0, 4, 8, and 12', :refs => [{:address => 0}, {:address => 4}, {:address => 8}, {:address => 12}]},
     ])
     assert_hash(result['X'][:nodes], {
-      0  => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 4}, {:address => 8}, {:address => 12}]},
-      4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [{:address => 4}, {:address => 8}, {:address => 20}]},
-      8  => {:type => 'defined',   :refs => [0, 4, 8, 12],  :xrefs => [{:address => 8}, {:address => 20}]},
-      12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [{:address => 8}, {:address => 20}]},
+      0  => {:type => 'undefined', :refs => [],                                         :xrefs => [{:address => 4}, {:address => 8}, {:address => 12}]},
+      4  => {:type => 'defined',   :refs => [{:address => 0}, {:address => 4}],         :xrefs => [{:address => 4}, {:address => 8}, {:address => 20}]},
+      8  => {:type => 'defined',   :refs => [{:address => 0}, {:address => 4}, {:address => 8}, {:address => 12}],  :xrefs => [{:address => 8}, {:address => 20}]},
+      12 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 16}],        :xrefs => [{:address => 8}, {:address => 20}]},
     }, "xrefs9", true)
 
     title("Deleting the segment")
@@ -1096,20 +1094,20 @@ class Test
     title("Undoing segment delete")
     result = workspace.undo()
     assert_hash(result['X'][:nodes], {
-      0  => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 4}, {:address => 8}, {:address => 12}]},
-      1  => {:type => 'undefined', :refs => [],             :xrefs => []},
-      2  => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 20}]},
-      3  => {:type => 'undefined', :refs => [],             :xrefs => []},
-      4  => {:type => 'defined',   :refs => [0, 4],         :xrefs => [{:address => 4}, {:address => 8}, {:address => 20}]},
-      8  => {:type => 'defined',   :refs => [0, 4, 8, 12],  :xrefs => [{:address => 8}, {:address => 20}]},
-      12 => {:type => 'defined',   :refs => [0, 16],        :xrefs => [{:address => 8}, {:address => 20}]},
-      16 => {:type => 'undefined', :refs => [],             :xrefs => [{:address => 12}]},
-      17 => {:type => 'undefined', :refs => [],             :xrefs => []},
-      18 => {:type => 'undefined', :refs => [],             :xrefs => []},
-      19 => {:type => 'undefined', :refs => [],             :xrefs => []},
-      20 => {:type => 'defined',   :refs => [2, 4, 10, 12], :xrefs => []},
-      24 => {:type => 'undefined', :refs => [],             :xrefs => []},
-      25 => {:type => 'undefined', :refs => [],             :xrefs => []},
+      0  => {:type => 'undefined', :refs => [],                                                                     :xrefs => [{:address => 4}, {:address => 8}, {:address => 12}]},
+      1  => {:type => 'undefined', :refs => [],                                                                     :xrefs => []},
+      2  => {:type => 'undefined', :refs => [],                                                                     :xrefs => [{:address => 20}]},
+      3  => {:type => 'undefined', :refs => [],                                                                     :xrefs => []},
+      4  => {:type => 'defined',   :refs => [{:address => 0}, {:address => 4}],                                     :xrefs => [{:address => 4}, {:address => 8}, {:address => 20}]},
+      8  => {:type => 'defined',   :refs => [{:address => 0}, {:address => 4}, {:address => 8}, {:address => 12}],  :xrefs => [{:address => 8}, {:address => 20}]},
+      12 => {:type => 'defined',   :refs => [{:address => 0}, {:address => 16}],                                    :xrefs => [{:address => 8}, {:address => 20}]},
+      16 => {:type => 'undefined', :refs => [],                                                                     :xrefs => [{:address => 12}]},
+      17 => {:type => 'undefined', :refs => [],                                                                     :xrefs => []},
+      18 => {:type => 'undefined', :refs => [],                                                                     :xrefs => []},
+      19 => {:type => 'undefined', :refs => [],                                                                     :xrefs => []},
+      20 => {:type => 'defined',   :refs => [{:address => 2}, {:address => 4}, {:address => 10}, {:address => 12}], :xrefs => []},
+      24 => {:type => 'undefined', :refs => [],                                                                     :xrefs => []},
+      25 => {:type => 'undefined', :refs => [],                                                                     :xrefs => []},
     }, "xrefs10", true)
 
     title("Re-doing segment delete")
@@ -1140,46 +1138,46 @@ class Test
     workspace.new_segment('s3', 0x1000, "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", {})
 
     # Create a node in s1 that references a node in s2 and s3
-    result = workspace.new_node('s1', 0x0000, 'dword0', 4, 'value0', { }, [0x1000])
+    result = workspace.new_node('s1', 0x0000, 'dword0', 4, 'value0', { }, [{:address => 0x1000}])
     assert_hash(result, {
       's1' => {
         :nodes => {
-          0x0000 => { :type => 'dword0',    :refs => [0x1000], :xrefs => []       },
+          0x0000 => { :type => 'dword0',    :refs => [{:address => 0x1000}], :xrefs => []       },
         },
       },
       's2' => {
         :nodes => {
-          0x1000 => { :type => 'undefined', :refs => [],       :xrefs => [{:segment => 's1', :address => 0x0000}] },
+          0x1000 => { :type => 'undefined', :refs => [], :xrefs => [{:segment => 's1', :address => 0x0000}] },
         },
       },
       's3' => {
         :nodes => {
-          0x1000 => { :type => 'undefined', :refs => [],       :xrefs => [{:segment => 's1', :address => 0x0000}] },
+          0x1000 => { :type => 'undefined', :refs => [], :xrefs => [{:segment => 's1', :address => 0x0000}] },
         }
       },
     }, 'xsegment1', true)
 
     # Create a node in s2 that references s1
-    result = workspace.new_node('s2', 0x1000, 'dword1000', 4, 'value1000', { }, [0x0])
+    result = workspace.new_node('s2', 0x1000, 'dword1000', 4, 'value1000', { }, [{:address => 0x0}])
     assert_hash(result, {
       's1' => {
         :nodes => {
-          0x0000 => { :type => 'dword0',    :refs => [0x1000], :xrefs => [{:segment => 's2', :address => 0x1000}] },
+          0x0000 => { :type => 'dword0',    :refs => [{:address => 0x1000}], :xrefs => [{:segment => 's2', :address => 0x1000}] },
         }
       },
       's2' => {
         :nodes => {
-          0x1000 => { :type => 'dword1000', :refs => [0x0000], :xrefs => [{:segment => 's1', :address => 0x0000}] },
+          0x1000 => { :type => 'dword1000', :refs => [{:address => 0x0000}], :xrefs => [{:segment => 's1', :address => 0x0000}] },
         },
       },
     }, 'xsegment2', true)
 
     # Create a node in s3 that references s1 and s2
-    result = workspace.new_node('s3', 0x1004, 'dword1004', 4, 'value1004', { }, [0x0000, 0x1008])
+    result = workspace.new_node('s3', 0x1004, 'dword1004', 4, 'value1004', { }, [{:address => 0x0000}, {:address => 0x1008}])
     assert_hash(result, {
       's1' => {
         :nodes => {
-          0x0000 => { :type => 'dword0',    :refs => [0x1000], :xrefs => [{:address => 0x1000}, {:address => 0x1004}] }, # TODO: Add the segment name to the xrefs
+          0x0000 => { :type => 'dword0',    :refs => [{:address => 0x1000}], :xrefs => [{:address => 0x1000}, {:address => 0x1004}] }, # TODO: Add the segment name to the xrefs
         }
       },
       's2' => {
@@ -1189,8 +1187,8 @@ class Test
       },
       's3' => {
         :nodes => {
-          0x1004 => { :type => 'dword1004', :refs => [0x0000, 0x1008], :xrefs => [] },
-          0x1008 => { :type => 'undefined', :refs => [],               :xrefs => [{:segment => 's3', :address => 0x1004}] },
+          0x1004 => { :type => 'dword1004', :refs => [{:address => 0x0000}, {:address => 0x1008}], :xrefs => [] },
+          0x1008 => { :type => 'undefined', :refs => [],                                           :xrefs => [{:segment => 's3', :address => 0x1004}] },
         },
       },
     }, 'xsegment3', true)
@@ -1205,12 +1203,12 @@ class Test
       },
       's2' => {
         :nodes => {
-          0x1000 => { :type => 'dword1000', :refs => [0x0000], :xrefs => [] },
+          0x1000 => { :type => 'dword1000', :refs => [{:address => 0x0000}], :xrefs => [] },
         },
       },
       's3' => {
         :nodes => {
-          0x1000 => { :type => 'undefined', :refs => [],       :xrefs => [] },
+          0x1000 => { :type => 'undefined', :refs => [], :xrefs => [] },
         },
       },
     }, 'xsegment3', true)
@@ -1226,16 +1224,17 @@ class Test
     workspace.new_segment('s2', 0x1000, "BBBBBBBBBBBBBBBB", {})
 
     # Create a node in s1 that references a node in s2 and s3
-    result = workspace.new_node('s1', 0x0000, 'dword0', 4, 'value0', { }, [0x1000])
+    result = workspace.new_node('s1', 0x0000, 'dword0', 4, 'value0', { }, [{:address => 0x1000}])
+    pp result
     assert_hash(result, {
       's1' => {
         :nodes => {
-          0x0000 => { :type => 'dword0',    :refs => [0x1000], :xrefs => []       },
+          0x0000 => { :type => 'dword0', :refs => [{:address => 0x1000}], :xrefs => []       },
         },
       },
       's2' => {
         :nodes => {
-          0x1000 => { :type => 'undefined', :refs => [],       :xrefs => [{:segment => 's1', :address => 0x0000}] },
+          0x1000 => { :type => 'undefined', :refs => [], :xrefs => [{:segment => 's1', :address => 0x0000}] },
         },
       },
     }, 'xnewsegment1', true)
@@ -1244,7 +1243,7 @@ class Test
     assert_hash(result, {
       's3' => {
         :nodes => {
-          0x1000 => { :type => 'undefined', :refs => [],       :xrefs => [{:segment => 's1', :address => 0x0000}] },
+          0x1000 => { :type => 'undefined', :refs => [], :xrefs => [{:segment => 's1', :address => 0x0000}] },
         },
       },
     }, 'xnewsegment1', true)
