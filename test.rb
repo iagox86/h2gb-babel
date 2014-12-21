@@ -1250,8 +1250,118 @@ class Test
   end
 
   def Test.test_data_xrefs()
-    # TODO
-    #assert(false, "TODO: Make test_data_xrefs work!!")
+    title("Testing xrefs with different types")
+    workspace = Workspace.find(@@workspace_id)
+    workspace.reset()
+
+    # Create some segments
+    workspace.new_segment('s1', 0x0, "AAAAAAAAAAAAAAAA", {})
+    workspace.new_segment('s2', 0x1000, "BBBBBBBBBBBBBBBB", {})
+
+    # Create a couple nodes with different types
+    result = workspace.new_node('s1', 0x0000, 'dword0', 4, 'value0', { }, [{:address => 0x1000, :type => "code"}])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0000 => { :type => 'dword0', :refs => [{:address => 0x1000, :type => "code"}], :xrefs => [] },
+        },
+      },
+      's2' => {
+        :nodes => {
+          0x1000 => { :type => 'undefined', :refs => [], :xrefs => [{:segment => 's1', :address => 0x0000, :type => "code"}] },
+        },
+      },
+    }, 'dataxref1', true)
+
+    result = workspace.new_node('s1', 0x0004, 'dword4', 4, 'value4', { }, [{:address => 0x1004, :type => "data"}])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0004 => { :type => 'dword4', :refs => [{:address => 0x1004, :type => "data"}], :xrefs => [] },
+        },
+      },
+      's2' => {
+        :nodes => {
+          0x1004 => { :type => 'undefined', :refs => [], :xrefs => [{:segment => 's1', :address => 0x0004, :type => "data"}] },
+        },
+      },
+    }, 'dataxref2', true)
+
+    # Reset the workspace
+    workspace.reset()
+    workspace.new_segment('s1', 0x0, "AAAAAAAAAAAAAAAA", {})
+    workspace.new_segment('s2', 0x1000, "BBBBBBBBBBBBBBBB", {})
+
+    # Create two different nodes that refer to the same address
+    result = workspace.new_node('s1', 0x0000, 'dword0', 4, 'value0', { }, [{:address => 0x1000, :type => "code"}])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0000 => { :type => 'dword0', :refs => [{:address => 0x1000, :type => "code"}], :xrefs => [] },
+        },
+      },
+      's2' => {
+        :nodes => {
+          0x1000 => { :type => 'undefined', :refs => [], :xrefs => [{:segment => 's1', :address => 0x0000}] },
+        },
+      },
+    }, 'dataxref3', true)
+
+    result = workspace.new_node('s1', 0x0004, 'dword4', 4, 'value4', { }, [{:address => 0x1000, :type => "data"}])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0004 => { :type => 'dword4', :refs => [{:address => 0x1000, :type => "data"}], :xrefs => [] },
+        },
+      },
+      's2' => {
+        :nodes => {
+          0x1000 => { :type => 'undefined', :refs => [], :xrefs => [{:segment => 's1', :address => 0x0000, :type => "code"},{:segment => 's1', :address => 0x0004, :type => "data"}] },
+        },
+      },
+    }, 'dataxref4', true)
+
+    # Delete one of those
+    result = workspace.delete_nodes('s1', [0x0000])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0000 => { :type => 'undefined', :refs => [], :xrefs => [] },
+          0x0001 => { :type => 'undefined', :refs => [], :xrefs => [] },
+          0x0002 => { :type => 'undefined', :refs => [], :xrefs => [] },
+          0x0003 => { :type => 'undefined', :refs => [], :xrefs => [] },
+        },
+      },
+      's2' => {
+        :nodes => {
+          0x1000 => { :type => 'undefined', :refs => [], :xrefs => [{:segment => 's1', :address => 0x0004, :type => "data"}] },
+        },
+      },
+    }, 'dataxref5', true)
+
+    # Delete the other
+    result = workspace.delete_nodes('s1', [0x0004])
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0004 => { :type => 'undefined', :refs => [], :xrefs => [] },
+          0x0005 => { :type => 'undefined', :refs => [], :xrefs => [] },
+          0x0006 => { :type => 'undefined', :refs => [], :xrefs => [] },
+          0x0007 => { :type => 'undefined', :refs => [], :xrefs => [] },
+        },
+      },
+      's2' => {
+        :nodes => {
+          0x1000 => { :type => 'undefined', :refs => [], :xrefs => [] },
+        },
+      },
+    }, 'dataxref6', true)
+
+
+    # Create two refs of different types from the same node to different nodes
+    # Delete them
+    # Create two refs of different types from the same node to the same node
+    # Delete them
   end
 
   def Test.test_properties()
@@ -1330,30 +1440,30 @@ class Test
     begin
       # Tests for binaries
       test_create_binary() # Mandatory (sets @@binary_id)
-      test_get_all_binaries()
-      test_find_binary()
-      test_save_binary()
+      #test_get_all_binaries()
+      #test_find_binary()
+      #test_save_binary()
 
       # Tests for workspaces
       test_create_workspace() # Mandatory (sets @@workspace_id)
-      test_get_all_workspaces()
-      test_find_workspace()
-      test_update_workspace()
-      test_create_segment()
-      test_delete_segment()
-      test_find_segments()
-      test_undo()
-      test_nodes()
-      test_create_multiple_segments()
-      test_create_multiple_nodes()
-      test_xrefs()
-      test_segment_details()
-      test_cross_segment_xrefs()
-      test_new_segment_xrefs()
+      #test_get_all_workspaces()
+      #test_find_workspace()
+      #test_update_workspace()
+      #test_create_segment()
+      #test_delete_segment()
+      #test_find_segments()
+      #test_undo()
+      #test_nodes()
+      #test_create_multiple_segments()
+      #test_create_multiple_nodes()
+      #test_xrefs()
+      #test_segment_details()
+      #test_cross_segment_xrefs()
+      #test_new_segment_xrefs()
       test_data_xrefs()
 
       # Tests for everything
-      test_properties()
+      #test_properties()
 
       puts("ALL DONE! EVERYTHING IS GOOD!!!")
     rescue Exception => e
