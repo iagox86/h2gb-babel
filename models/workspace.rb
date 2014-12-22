@@ -250,7 +250,7 @@ class Workspace < Model
         if(node[:xrefs] && node[:xrefs].length > 0)
           xrefs = node[:xrefs] ? (' XREFS: %s' % node[:xrefs].map() { |x| '0x%x' % x }.join(", ")) : ""
         end
-        puts("%s:%08x %s %s %s" % [segment[:name], node[:address], raw, node[:value], xrefs])
+        puts("%s:%08x %12s %s %s %s" % [name, node[:address], node[:type], raw, node[:value], xrefs])
 
         last_address = address
       end

@@ -67,7 +67,7 @@ class Analyzer
           :length     => dis[:length],
           :value      => dis[:value],
           :details    => dis[:details],
-          :refs       => dis[:references]
+          :refs       => []#dis[:references] # TODO: FIXME
         }
 
         # Queue up its references

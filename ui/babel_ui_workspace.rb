@@ -40,6 +40,11 @@ class BabelUiWorkspace
       end
     end
 
+    workspace_ui.register_command("test", "Test!") do
+      require 'analyzer/segment'
+      AnalyzerController.new(@workspace)
+    end
+
     workspace_ui.register_command("dis", "Shows disassembly") do |opts, optvar|
       @workspace.print
     end
