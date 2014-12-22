@@ -2,9 +2,9 @@
 # By Ron Bowes
 # Created 2014-12-12
 
-require 'formats/elf'
-require 'formats/pe'
-require 'formats/raw'
+require 'analyzer/formats/elf'
+require 'analyzer/formats/pe'
+require 'analyzer/formats/raw'
 
 class AutoFormat
   def AutoFormat.parse(data)

@@ -1,5 +1,5 @@
 require 'metasm'
-require 'arch/arch'
+require 'analyzer/arch/arch'
 
 class Intel < Arch
   X86 = "x86"

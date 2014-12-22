@@ -5,12 +5,12 @@
 require 'models/binary'
 require 'models/workspace'
 
-require 'formats/auto_format'
-require 'formats/elf'
-require 'formats/pe'
-require 'formats/raw'
+require 'analyzer/formats/auto_format'
+require 'analyzer/formats/elf'
+require 'analyzer/formats/pe'
+require 'analyzer/formats/raw'
 
-require 'arch/intel'
+require 'analyzer/arch/intel'
 
 require 'pp' # TODO: debug
 
