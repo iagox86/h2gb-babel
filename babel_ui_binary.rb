@@ -2,7 +2,7 @@
 # By Ron Bowes
 # Created December 12, 2014
 
-require 'analyzer'
+require 'analyzer/analyzer'
 require 'ui'
 require 'babel_ui_workspace'
 
