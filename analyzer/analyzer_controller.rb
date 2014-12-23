@@ -19,16 +19,20 @@ class AnalyzerController
 #    end
 #
     @segments[segment.name] = segment
+
+    return segment
   end
 
   def add_node(segment_name, node)
     segment = @segments[segment_name]
     segment.add_node(node)
+
+    return node
   end
 
   def push(sink)
     @segments.each_pair do |segment_name, segment|
-      segment.sync(sink)
+      segment.push(sink)
     end
   end
 

@@ -3,7 +3,7 @@
 # Created December 22, 2014
 
 class AnalyzerSegment
-  attr_accessor :name
+  attr_accessor :name, :address, :data
 
   def initialize(name, address, data, needs_creating = true)
     @name      = name
@@ -24,7 +24,7 @@ class AnalyzerSegment
     @nodes[node.address] = node
   end
 
-  def sync(sink)
+  def push(sink)
     # If it needs to be created, create it
     if(@needs_creating)
       sink.new_segment(@name, @address, @data, {})
