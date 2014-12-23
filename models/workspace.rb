@@ -149,10 +149,10 @@ class Workspace < Model
     }.merge(params)).o[:segments]
   end
 
-  def new_node(segment, address, type, length, value, details, references, params = {})
+  def new_node(segment_name, address, type, length, value, details, references, params = {})
     return post_stuff("/workspaces/:workspace_id/new_nodes", { 
       :workspace_id => self.o[:workspace_id],
-      :segment => segment,
+      :segment => segment_name,
       :nodes => [{
         :address => address,
         :type    => type,
@@ -163,22 +163,22 @@ class Workspace < Model
     }]}.merge(params)).o[:segments]
   end
 
-  def new_nodes(segment, nodes, params = {})
+  def new_nodes(segment_name, nodes, params = {})
     return post_stuff("/workspaces/:workspace_id/new_nodes", { 
       :workspace_id => self.o[:workspace_id],
-      :segment => segment,
+      :segment => segment_name,
       :nodes => nodes
     }.merge(params)).o[:segments]
   end
 
-  def delete_nodes(segment, addresses, params = {})
+  def delete_nodes(segment_name, addresses, params = {})
     if(!addresses.is_a?(Array))
       addresses = [addresses]
     end
 
     return post_stuff("/workspaces/:workspace_id/delete_nodes", {
       :workspace_id => self.o[:workspace_id],
-      :segment => segment,
+      :segment => segment_name,
       :addresses => addresses,
     }.merge(params)).o[:segments]
   end
@@ -243,7 +243,7 @@ class Workspace < Model
         node = segment[:nodes][address]
 
         raw = node[:raw].unpack("H*").pop
-        raw = raw + (" " * (12 - raw.length()))
+        raw = raw + (" " * (24 - raw.length()))
 
         xrefs = ''
         node[:xrefs].delete(last_address)

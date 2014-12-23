@@ -1,11 +1,21 @@
 require 'base64'
 require 'metasm'
 
+require 'tempfile'
+
 class PE
   def PE.parse(data)
     pe = { }
 
-    e = Metasm::PE.decode_file(self.filename)
+    # TODO: This is balls
+    begin
+      file = Tempfile.new('h2gb')
+      file.write(data)
+      file.rewind
+      e = Metasm::PE.decode_file(file.path)
+    ensure
+      file.unlink
+    end
 
     # Header
     pe[:header] = {
@@ -19,44 +29,45 @@ class PE
     }
 
     # Sections
-    pe[:sections] = []
+    pe[:segments] = []
     e.sections.each do |s|
-      section = {
-        :name        => s.name,
-        :addr        => s.virtaddr,
-        :flags       => s.characteristics,
-        :file_offset => s.rawaddr,
-        :file_size   => s.rawsize,
+      segment = {
+        :name         => s.name,
+        :address      => s.virtaddr,
+        :flags        => s.characteristics,
+        :file_address => s.rawaddr,
+        :file_size    => s.rawsize,
+        :data         => data[s.rawaddr, s.rawsize],
       }
 
-      pe[:sections] << section
+      pe[:segments] << segment
     end
 
-    pe[:imports] = {}
-    e.imports.each do |import_directory|
-      pe[:imports][import_directory.libname] = []
-      import_directory.imports.each do |import|
-        pe[:imports][import_directory.libname] << {
-          :name   => import.name,
-          :hint   => import.hint,
-          :target => import.target,
-        }
-      end
-    end
-
-    pe[:exports] = []
-
-    if(!e.export.nil?)
-      e.export.exports.each do |export|
-        pe[:exports] << {
-          :ordinal        => export.ordinal,
-          :forwarder_lib  => export.forwarder_lib,
-          :forwarder_name => export.forwarder_name,
-          :name           => export.name,
-          :address        => export.target_rva,
-        }
-      end
-    end
+#    pe[:imports] = {}
+#    e.imports.each do |import_directory|
+#      pe[:imports][import_directory.libname] = []
+#      import_directory.imports.each do |import|
+#        pe[:imports][import_directory.libname] << {
+#          :name   => import.name,
+#          :hint   => import.hint,
+#          :target => import.target,
+#        }
+#      end
+#    end
+#
+#    pe[:exports] = []
+#
+#    if(!e.export.nil?)
+#      e.export.exports.each do |export|
+#        pe[:exports] << {
+#          :ordinal        => export.ordinal,
+#          :forwarder_lib  => export.forwarder_lib,
+#          :forwarder_name => export.forwarder_name,
+#          :name           => export.name,
+#          :address        => export.target_rva,
+#        }
+#      end
+#    end
 
     return pe
   end

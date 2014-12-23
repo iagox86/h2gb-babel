@@ -15,6 +15,11 @@ require 'analyzer/analyzer_segment'
 require 'pp' # TODO: debug
 
 class Analyzer
+  # The sink should have the functions:
+  #new_segment(name, address, data, details, params = {})
+  #new_segments(segments, params = {})
+  #new_node(segment_name, address, type, length, value, details, references, params = {})
+  #new_nodes(segment_name, nodes, params = {})
   def Analyzer.analyze(data, sink)
     file = AutoFormat.parse(data)
     controller = AnalyzerController.new(sink)
@@ -30,13 +35,14 @@ class Analyzer
 
       # Do the actual disassembly
       queue = [file[:header][:entrypoint]]
+      #queue = []
 
       arch = Intel.new(segment.data, Intel::X86, segment.address)
       addr = 0
       completed = {}
 
       while(queue.length > 0)
-        puts("Queue: #{queue.map() { |a| "%04x" % a }.join(", ")}")
+        puts("Queue: #{queue.map() { |a| "0x%08x" % a }.join(", ")}")
 
         # Get the address
         addr = queue.shift()
@@ -49,14 +55,19 @@ class Analyzer
         # Disassemble the address
         dis = arch.disassemble(addr)
 
-        # Create the node and add it to the segment
-        segment.add_node(AnalyzerNode.new(addr, dis[:type], dis[:length], dis[:value], [])) # TODO: refs + details
+        if(!dis.nil?)
+          # Create the node and add it to the segment
+          segment.add_node(AnalyzerNode.new(addr, dis[:type], dis[:length], dis[:value], [])) # TODO: refs + details
+
+          # Queue up its references
+          queue += dis[:references]
+        else
+          puts("Warning: Couldn't disassemble address 0x%08x" % addr)
+        end
 
         # Mark the address as completed
         completed[addr] = true
 
-        # Queue up its references
-        queue += dis[:references]
       end
     end
 
