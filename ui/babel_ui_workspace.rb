@@ -41,7 +41,7 @@ class BabelUiWorkspace
     end
 
     workspace_ui.register_command("test", "Test!") do
-      require 'analyzer/segment'
+      require 'analyzer/analyzer_controller'
       AnalyzerController.new(@workspace)
     end
 
