@@ -30,6 +30,12 @@ class AnalyzerSegment
       sink.new_segment(@name, @address, @data, {})
       @needs_creating = false
     end
+
     sink.new_nodes(@name, @nodes.values.select() { |x| x.dirty? }.map() { |x| x.to_json(true) })
+#    nodes = @nodes.values.select() { |x| x.dirty? }
+#
+#    nodes.each_slice(10) do |slice|
+#      sink.new_nodes(@name, slice.map() { |x| x.to_json(true) })
+#    end
   end
 end

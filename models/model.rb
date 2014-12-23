@@ -32,6 +32,7 @@ class Model
 
     # Replace placeholders in the URL with the params field
     url = format_url(url, params)
+    puts("URL: #{url}")
 
     if(use_body)
       result = method.call(url, :body => JSON.pretty_generate(params))

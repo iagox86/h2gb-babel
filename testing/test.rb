@@ -1440,6 +1440,10 @@ class Test
     workspace.new_segment('s2', 0x1000, "BBBBBBBBBBBBBBBB", {})
   end
 
+  def Test.test_nonzero_base()
+    assert(false, "TODO: Test non-zero bases")
+  end
+
   def Test.test_properties()
     binary = Binary.find(@@binary_id)
 
@@ -1537,6 +1541,7 @@ class Test
       test_cross_segment_xrefs()
       test_new_segment_xrefs()
       test_data_xrefs()
+      test_nonzero_base()
 
       # Tests for everything
       test_properties()
