@@ -1,12 +1,13 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    httparty (0.13.1)
+    httparty (0.13.3)
       json (~> 1.8)
       multi_xml (>= 0.5.2)
     json (1.8.1)
-    metasm (1.0.1)
+    metasm (1.0.2)
     multi_xml (0.5.5)
+    trollop (2.0)
 
 PLATFORMS
   ruby
@@ -14,3 +15,4 @@ PLATFORMS
 DEPENDENCIES
   httparty
   metasm
+  trollop
