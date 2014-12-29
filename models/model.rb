@@ -35,7 +35,7 @@ class Model
     puts("URL: #{url}")
 
     if(use_body)
-      result = method.call(url, :body => "BASE64" + Base64.encode64(JSON.pretty_generate(params)))
+      result = method.call(url, :body => JSON.pretty_generate(params), :headers => { 'Content-Type' => 'application/json'})
     else
       new_params = []
       params.each_pair do |k, v|

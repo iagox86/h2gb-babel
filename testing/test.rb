@@ -1444,6 +1444,24 @@ class Test
     assert(false, "TODO: Test non-zero bases")
   end
 
+  def Test.test_large_data()
+    title("Testing large data structures")
+    workspace = Workspace.find(@@workspace_id)
+    workspace.reset()
+
+    # Create the segment
+    workspace.new_segment('s1', 0x0, "A" * 4096, {})
+
+    # Generate 4096 nodes
+    nodes = []
+    0.upto(4096 - 1) do |i|
+      nodes << {:address => i, :type => 'defined', :length => 1, :value => "Node #{i}", :refs => []}
+    end
+
+    # Create them
+    workspace.new_nodes('s1', nodes)
+  end
+
   def Test.test_properties()
     binary = Binary.find(@@binary_id)
 
@@ -1542,6 +1560,7 @@ class Test
       test_new_segment_xrefs()
       test_data_xrefs()
       test_nonzero_base()
+      #test_large_data()
 
       # Tests for everything
       test_properties()
