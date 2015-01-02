@@ -710,6 +710,37 @@ class Test
     assert_equal(segments.length, 0, "Checking if all segments are gone")
   end
 
+  def Test.test_create_delete_nodes()
+    title("Testing creating and deleting nodes")
+    workspace = Workspace.find(@@workspace_id)
+    workspace.reset()
+
+    workspace.new_segment('s1', 0x0000, 'ABCDEFGH', {})
+    workspace.new_node('s1', 0x0000, 'dword0', 4, 'value0', { :test => '123', :test2 => 456 }, [{:address => 0x0004}])
+
+    result = workspace.get_segments('s1', :with_data => true, :with_segments => true, :with_nodes => true)
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0000 => { :type => 'dword0',    :refs => [{:address => 0x0004}], :xrefs => []       },
+          0x0004 => { :type => 'undefined', :refs => [],                     :xrefs => [{:segment => 's1', :address => 0x0000}] },
+        }
+      }
+    }, 'createdeletenodes1', true)
+
+    workspace.delete_nodes('s1', 0x0000)
+    result = workspace.get_segments('s1', :with_data => true, :with_segments => true, :with_nodes => true)
+    assert_hash(result, {
+      's1' => {
+        :nodes => {
+          0x0000 => { :type => 'undefined', :refs => [], :xrefs => [] },
+          0x0004 => { :type => 'undefined', :refs => [], :xrefs => [] },
+        }
+      }
+    }, 'createdeletenodes2', true)
+
+  end
+
   def Test.test_nodes()
     title("Testing creating / deleting / undoing / redoing nodes")
     workspace = Workspace.find(@@workspace_id)
@@ -1445,21 +1476,26 @@ class Test
   end
 
   def Test.test_large_data()
+    size = 4096
     title("Testing large data structures")
     workspace = Workspace.find(@@workspace_id)
     workspace.reset()
 
     # Create the segment
-    workspace.new_segment('s1', 0x0, "A" * 4096, {})
+    workspace.new_segment('s1', 0x0, "A" * size, {})
 
-    # Generate 4096 nodes
+    # Generate a bunch of nodes
     nodes = []
-    0.upto(4096 - 1) do |i|
+    0.upto(size - 1) do |i|
       nodes << {:address => i, :type => 'defined', :length => 1, :value => "Node #{i}", :refs => []}
     end
 
     # Create them
     workspace.new_nodes('s1', nodes)
+  end
+
+  def Test.test_undo_multiple_nodes()
+    assert(false, "TODO: Test multiple nodes")
   end
 
   def Test.test_properties()
@@ -1551,6 +1587,7 @@ class Test
       test_delete_segment()
       test_find_segments()
       test_undo()
+      test_create_delete_nodes()
       test_nodes()
       test_create_multiple_segments()
       test_create_multiple_nodes()
@@ -1560,6 +1597,7 @@ class Test
       test_new_segment_xrefs()
       test_data_xrefs()
       test_nonzero_base()
+      test_undo_multiple_nodes()
       #test_large_data()
 
       # Tests for everything
